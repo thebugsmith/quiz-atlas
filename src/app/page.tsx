@@ -1,69 +1,119 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Clock3, Flame, Sparkles } from "lucide-react";
+import { Container } from "@/components/ui/container";
+import { Card, CardBody, CardTitle } from "@/components/ui/card";
+import { ButtonLink } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { SectionHeading } from "@/components/ui/section-heading";
+import { topicFixtures } from "@/features/topics/fixtures";
+import { TopicIcon } from "@/features/topics/topic-icon";
 
 export default function Home() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-between bg-white px-16 py-32 sm:items-start dark:bg-black">
-        <Image
-          className="h-5 w-[100px] dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl leading-10 font-semibold tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="bg-foreground text-background flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 transition-colors hover:bg-[#383838] md:w-[158px] dark:hover:bg-[#ccc]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="h-[14px] w-4 dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] md:w-[158px] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="space-y-12">
+      <section>
+        <Container>
+          <div className="border-border bg-surface rounded-[var(--radius-card)] border p-6 sm:p-8">
+            <Badge tone="primary" className="mb-4">
+              <Sparkles className="size-3.5" aria-hidden="true" />
+              10 questions · mixed difficulty
+            </Badge>
+            <h1 className="max-w-2xl text-3xl leading-tight font-semibold tracking-tight sm:text-4xl">
+              Test what you know, then learn what you missed.
+            </h1>
+            <p className="text-muted-foreground mt-3 max-w-xl text-[15px] leading-relaxed">
+              Pick a topic, pick a format, and play. Every answer comes with an explanation, so a
+              wrong guess is still a useful one.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <ButtonLink href="/play" size="lg">
+                Play now
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </ButtonLink>
+              <ButtonLink href="/topics" variant="secondary" size="lg">
+                Browse topics
+              </ButtonLink>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      <section>
+        <Container>
+          <SectionHeading
+            title="Choose a topic"
+            description="All topics, or just the ones you feel like today."
+            action={
+              <Link
+                href="/topics"
+                className="text-primary inline-flex items-center gap-1 text-sm font-medium hover:underline"
+              >
+                See all topics
+                <ArrowRight className="size-3.5" aria-hidden="true" />
+              </Link>
+            }
+          />
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {topicFixtures.map((topic) => (
+              <li key={topic.slug}>
+                <Link
+                  href={`/play?topics=${topic.slug}`}
+                  className="group border-border bg-surface hover:border-border-strong hover:bg-surface-muted flex h-full items-start gap-3 rounded-[var(--radius-card)] border p-4 transition-colors"
+                >
+                  <TopicIcon topic={topic} />
+                  <span className="min-w-0">
+                    <span className="block text-[15px] font-medium">{topic.name}</span>
+                    <span className="text-muted-foreground mt-0.5 block text-sm leading-relaxed break-words">
+                      {topic.description}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Container>
+      </section>
+
+      <section>
+        <Container className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Card className="lg:col-span-2">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <CardTitle className="flex items-center gap-2">
+                  <Flame className="text-warning size-4" aria-hidden="true" />
+                  Daily Challenge
+                </CardTitle>
+                <CardBody className="mt-1.5">
+                  One fixed set of questions per day, scored on a shared leaderboard. Sign in to
+                  enter.
+                </CardBody>
+              </div>
+              <Badge>Daily</Badge>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <ButtonLink href="/daily" variant="secondary" size="sm">
+                How it works
+              </ButtonLink>
+              <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs">
+                <Clock3 className="size-3.5" aria-hidden="true" />
+                Resets at 00:00 UTC
+              </span>
+            </div>
+          </Card>
+
+          <Card>
+            <CardTitle>Your progress</CardTitle>
+            <CardBody className="mt-1.5">
+              No games yet. Play a round and your recent scores will show up here.
+            </CardBody>
+            <div className="mt-4">
+              <ButtonLink href="/play" size="sm">
+                Start your first quiz
+              </ButtonLink>
+            </div>
+          </Card>
+        </Container>
+      </section>
     </div>
   );
 }

@@ -1,26 +1,124 @@
 @import "tailwindcss";
 
+/* `dark:` follows the palette attribute set by ThemeProvider, not the OS alone. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+  Design tokens. Two palettes share one variable contract, so components never
+  branch on the theme. `data-theme` is set on <html> by ThemeProvider before
+  paint (see src/components/theme).
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --surface-muted: #f1f5f9;
+  --surface-hover: #eef2f7;
+  --foreground: #0f172a;
+  --muted-foreground: #475569;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-foreground: #ffffff;
+  --primary-soft: #eff6ff;
+
+  --success: #15803d;
+  --success-soft: #f0fdf4;
+  --danger: #b91c1c;
+  --danger-soft: #fef2f2;
+  --warning: #b45309;
+  --warning-soft: #fffbeb;
+
+  --focus-ring: #2563eb;
+  --radius-card: 16px;
+  --radius-control: 12px;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: #070d1b;
+  --surface: #0f172a;
+  --surface-muted: #152139;
+  --surface-hover: #1b2942;
+  --foreground: #e8eef7;
+  --muted-foreground: #9aa8bd;
+  --border: #1e2b45;
+  --border-strong: #2c3c5a;
+
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --primary-foreground: #06122a;
+  --primary-soft: #12294d;
+
+  --success: #4ade80;
+  --success-soft: #0d2a1c;
+  --danger: #f87171;
+  --danger-soft: #2c1214;
+  --warning: #fbbf24;
+  --warning-soft: #2b1f08;
+
+  --focus-ring: #60a5fa;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-hover: var(--surface-hover);
   --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --radius-card: var(--radius-card);
+  --radius-control: var(--radius-control);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Keyboard users always see where they are; pointer users do not. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  ::selection {
+    background-color: var(--primary-soft);
+    color: var(--foreground);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
