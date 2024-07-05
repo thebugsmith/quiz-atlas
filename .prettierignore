@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+build
+coverage
+pnpm-lock.yaml
+quiz-app-prompts
+credentials
+*.tsbuildinfo
+next-env.d.ts
