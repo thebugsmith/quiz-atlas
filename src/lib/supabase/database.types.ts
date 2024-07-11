@@ -5,73 +5,61 @@ export type Database = {
     Tables: {
       question_versions: {
         Row: {
-          attribution: string | null;
-          author_id: string | null;
           content_hash: string;
-          correct_option_id: string;
+          correct_option_id: number;
           created_at: string;
           difficulty: Database["content"]["Enums"]["difficulty"];
-          explanation: string;
+          explanation: string | null;
           id: string;
-          license_note: string;
           locale: string;
           options: NonNullable<Json>;
           prompt: string;
-          published_at: string | null;
           question_id: string;
-          reviewer_id: string | null;
-          sources: NonNullable<Json>;
+          question_type: Database["content"]["Enums"]["question_type"];
+          statements: string[];
+          stem: string | null;
           subtopic_id: string | null;
           tags: string[];
           topic_id: string;
-          verified_at: string | null;
           version_number: number;
         };
         ComputedFields: never;
         Insert: {
-          attribution?: string | null;
-          author_id?: string | null;
           content_hash: string;
-          correct_option_id: string;
+          correct_option_id: number;
           created_at?: string;
           difficulty: Database["content"]["Enums"]["difficulty"];
-          explanation: string;
+          explanation?: string | null;
           id?: string;
-          license_note?: string;
           locale?: string;
           options: NonNullable<Json>;
           prompt: string;
-          published_at?: string | null;
           question_id: string;
-          reviewer_id?: string | null;
-          sources?: NonNullable<Json>;
+          question_type?: Database["content"]["Enums"]["question_type"];
+          statements?: string[];
+          stem?: string | null;
           subtopic_id?: string | null;
           tags?: string[];
           topic_id: string;
-          verified_at?: string | null;
           version_number: number;
         };
         Update: {
-          attribution?: string | null;
-          author_id?: string | null;
           content_hash?: string;
-          correct_option_id?: string;
+          correct_option_id?: number;
           created_at?: string;
           difficulty?: Database["content"]["Enums"]["difficulty"];
-          explanation?: string;
+          explanation?: string | null;
           id?: string;
-          license_note?: string;
           locale?: string;
           options?: NonNullable<Json>;
           prompt?: string;
-          published_at?: string | null;
           question_id?: string;
-          reviewer_id?: string | null;
-          sources?: NonNullable<Json>;
+          question_type?: Database["content"]["Enums"]["question_type"];
+          statements?: string[];
+          stem?: string | null;
           subtopic_id?: string | null;
           tags?: string[];
           topic_id?: string;
-          verified_at?: string | null;
           version_number?: number;
         };
         Relationships: [
@@ -102,32 +90,26 @@ export type Database = {
         Row: {
           archived_at: string | null;
           created_at: string;
-          created_by: string | null;
           current_version_id: string | null;
           external_id: string;
           id: string;
-          status: Database["content"]["Enums"]["question_status"];
           updated_at: string;
         };
         ComputedFields: never;
         Insert: {
           archived_at?: string | null;
           created_at?: string;
-          created_by?: string | null;
           current_version_id?: string | null;
           external_id: string;
           id?: string;
-          status?: Database["content"]["Enums"]["question_status"];
           updated_at?: string;
         };
         Update: {
           archived_at?: string | null;
           created_at?: string;
-          created_by?: string | null;
           current_version_id?: string | null;
           external_id?: string;
           id?: string;
-          status?: Database["content"]["Enums"]["question_status"];
           updated_at?: string;
         };
         Relationships: [
@@ -218,11 +200,11 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      options_are_valid: { Args: { correct_option_id: string; options: Json }; Returns: boolean };
+      options_are_valid: { Args: { correct_option_id: number; options: Json }; Returns: boolean };
     };
     Enums: {
       difficulty: "easy" | "medium" | "hard";
-      question_status: "draft" | "published" | "archived";
+      question_type: "mcq" | "comprehension";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -562,7 +544,7 @@ export const Constants = {
   content: {
     Enums: {
       difficulty: ["easy", "medium", "hard"],
-      question_status: ["draft", "published", "archived"],
+      question_type: ["mcq", "comprehension"],
     },
   },
   public: {

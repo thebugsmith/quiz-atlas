@@ -18,7 +18,9 @@
     "db:stop": "supabase stop",
     "db:status": "supabase status",
     "db:reset": "supabase db reset",
-    "db:types": "supabase gen types typescript --local --schema public,content > src/lib/supabase/database.types.ts"
+    "db:types": "supabase gen types typescript --local --schema public,content > src/lib/supabase/database.types.ts",
+    "content:import": "tsx scripts/import-questions.ts",
+    "content:convert": "tsx scripts/convert-source.ts"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
@@ -33,15 +35,18 @@
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "eslint-config-prettier": "^10.1.8",
+    "pg": "^8.23.1",
     "prettier": "3.10.1",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "supabase": "3.2.0",
     "tailwindcss": "4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   },
   "packageManager": "pnpm@12.15.0"

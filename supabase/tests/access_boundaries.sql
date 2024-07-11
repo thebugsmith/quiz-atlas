@@ -25,23 +25,22 @@ on conflict (id) do nothing;
 
 with topic as (select id from content.topics where slug = 'science'),
 q as (
-  insert into content.questions (external_id, status, created_by)
-  values ('probe-question-001', 'draft', '11111111-1111-4111-8111-111111111111')
+  insert into content.questions (external_id)
+  values ('probe-question-001')
   on conflict (external_id) do update set updated_at = now()
   returning id
 ), v as (
   insert into content.question_versions
     (question_id, version_number, topic_id, difficulty, prompt, options, correct_option_id,
-     explanation, content_hash, published_at)
+     explanation, content_hash)
   select q.id, 1, topic.id, 'easy', 'Which planet is the largest in our Solar System?',
-    '[{"id":"jupiter","text":"Jupiter"},{"id":"saturn","text":"Saturn"},{"id":"neptune","text":"Neptune"},{"id":"earth","text":"Earth"}]'::jsonb,
-    'jupiter', 'Jupiter is the largest planet in our Solar System.',
-    repeat('a', 64), now()
+    '[{"id":1,"text":"Jupiter"},{"id":2,"text":"Saturn"},{"id":3,"text":"Neptune"},{"id":4,"text":"Earth"}]'::jsonb,
+    1, 'Jupiter is the largest planet in our Solar System.', repeat('a', 64)
   from q, topic
   on conflict (question_id, version_number) do nothing
   returning id, question_id
 )
-update content.questions set current_version_id = v.id, status = 'published' from v where questions.id = v.question_id;
+update content.questions set current_version_id = v.id from v where content.questions.id = v.question_id;
 
 insert into public.attempts (id, owner_id, mode, status, config, selection_seed, question_count, started_at)
 values ('22222222-2222-4222-8222-222222222222', '11111111-1111-4111-8111-111111111111', 'classic', 'active',
@@ -50,13 +49,13 @@ on conflict (id) do nothing;
 
 insert into public.attempt_questions (id, attempt_id, position, question_id, question_version_id, option_order)
 select '33333333-3333-4333-8333-333333333333', '22222222-2222-4222-8222-222222222222', 1,
-       qv.question_id, qv.id, '["jupiter","saturn","neptune","earth"]'::jsonb
+       qv.question_id, qv.id, '[1,2,3,4]'::jsonb
 from content.question_versions qv join content.questions q on q.id = qv.question_id
 where q.external_id = 'probe-question-001'
 on conflict do nothing;
 
 insert into public.attempt_answers (attempt_id, attempt_question_id, action, selected_option_id, is_correct, points_awarded, idempotency_key)
-values ('22222222-2222-4222-8222-222222222222', '33333333-3333-4333-8333-333333333333', 'answer', 'jupiter', true, 10, 'probe-key-0001')
+values ('22222222-2222-4222-8222-222222222222', '33333333-3333-4333-8333-333333333333', 'answer', '1', true, 10, 'probe-key-0001')
 on conflict do nothing;
 
 select
