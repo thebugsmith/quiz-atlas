@@ -7,11 +7,17 @@ export const createAttemptSchema = z.object({
   idempotencyKey: z.string().min(8).max(100),
 });
 
-export const submitAnswerSchema = z.object({
-  position: z.number().int().min(1).max(50),
-  optionId: z.number().int().min(1).max(4),
-  idempotencyKey: z.string().min(8).max(100),
-});
+export const submitAnswerSchema = z
+  .object({
+    position: z.number().int().min(1).max(50),
+    action: z.enum(["answer", "skip"]).default("answer"),
+    optionId: z.number().int().min(1).max(4).nullable().default(null),
+    idempotencyKey: z.string().min(8).max(100),
+  })
+  .refine((value) => value.action === "skip" || value.optionId !== null, {
+    message: "an answer needs an option",
+    path: ["optionId"],
+  });
 
 export type CreateAttemptInput = z.infer<typeof createAttemptSchema>;
 export type SubmitAnswerInput = z.infer<typeof submitAnswerSchema>;

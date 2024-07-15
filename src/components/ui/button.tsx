@@ -6,7 +6,7 @@ type Variant = "primary" | "secondary" | "ghost" | "quiet";
 type Size = "sm" | "md" | "lg";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] font-medium " +
+  "inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] font-medium text-center whitespace-normal " +
   "transition-colors duration-150 " +
   "disabled:cursor-not-allowed disabled:border disabled:border-border disabled:bg-surface-muted " +
   "disabled:text-muted-foreground disabled:opacity-100 disabled:shadow-none " +

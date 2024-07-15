@@ -13,6 +13,14 @@ export function gameJson(body: unknown, status = 200) {
 
 export const unauthenticated = () => gameJson({ error: "unauthenticated" }, 401);
 
+/** Public summaries may be cached briefly at the edge; nothing personal inside. */
+export function publicJson(body: unknown, maxAgeSeconds = 30) {
+  return NextResponse.json(body, {
+    status: 200,
+    headers: { "Cache-Control": `public, max-age=${maxAgeSeconds}, stale-while-revalidate=60` },
+  });
+}
+
 export async function requireUser() {
   return getVerifiedUser();
 }

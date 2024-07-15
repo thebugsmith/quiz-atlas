@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Info, Layers, Timer, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { difficultyOptions, topicFixtures, type DifficultyValue } from "@/features/topics/fixtures";
 import { TopicIcon } from "@/features/topics/topic-icon";
 import { cn } from "@/lib/cn";
 
@@ -48,31 +48,120 @@ const modes: ModeOption[] = [
   },
 ];
 
-const questionCounts = [10, 20, 30] as const;
+const difficultyOptions = [
+  { value: "easy", label: "Easy" },
+  { value: "medium", label: "Medium" },
+  { value: "hard", label: "Hard" },
+  { value: "mixed", label: "Mixed" },
+] as const;
 
-/**
- * Setup shell. The controls are real and hold state, but nothing is submitted:
- * the game server and its validation arrive in later milestones, and this screen
- * must not pretend a quiz started.
- */
+type DifficultyValue = (typeof difficultyOptions)[number]["value"];
+
+type TopicSummary = {
+  slug: string;
+  name: string;
+  description: string;
+  available: number;
+};
+
+const questionCounts = [5, 10, 20, 50] as const;
+
 export function SetupShell() {
+  const router = useRouter();
+  const [topics, setTopics] = useState<TopicSummary[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [difficulty, setDifficulty] = useState<DifficultyValue>("mixed");
   const [mode, setMode] = useState<ModeOption["value"]>("classic");
   const [count, setCount] = useState<(typeof questionCounts)[number]>(10);
+  const [customCount, setCustomCount] = useState("");
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+  // One key per setup intent, so a retried start cannot create a second quiz. It is
+  // created on the first click rather than during render: a prerendered page must not
+  // bake a random value into the static HTML.
+  const createKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/topics")
+      .then((response) => response.json())
+      .then((body) => {
+        if (!cancelled) setTopics(body.topics ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError("Could not load topics. Try reloading the page.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const allSelected = selected.length === 0;
   const selectedNames = allSelected
     ? "All topics"
-    : topicFixtures
+    : (topics ?? [])
         .filter((topic) => selected.includes(topic.slug))
         .map((topic) => topic.name)
         .join(", ");
+
+  const available = useMemo(() => {
+    if (!topics) return 0;
+    return topics
+      .filter((topic) => allSelected || selected.includes(topic.slug))
+      .reduce((total, topic) => total + topic.available, 0);
+  }, [topics, selected, allSelected]);
+
+  const effectiveCount = customCount ? Number(customCount) : count;
+  const countValid =
+    Number.isInteger(effectiveCount) && effectiveCount >= 5 && effectiveCount <= 50;
+  const enoughQuestions = countValid && available >= effectiveCount;
+  const canStart = !starting && topics !== null && enoughQuestions;
 
   function toggleTopic(slug: string) {
     setSelected((current) =>
       current.includes(slug) ? current.filter((item) => item !== slug) : [...current, slug],
     );
+  }
+
+  async function startQuiz() {
+    if (!canStart) return;
+    setStarting(true);
+    setStartError(null);
+
+    try {
+      createKey.current ??= crypto.randomUUID();
+      const response = await fetch("/api/attempts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          topics: allSelected ? (topics ?? []).map((topic) => topic.slug) : selected,
+          difficulty,
+          count: effectiveCount,
+          idempotencyKey: createKey.current,
+        }),
+      });
+      const body = await response.json().catch(() => null);
+
+      if (!response.ok || !body?.attempt_id) {
+        if (body?.error === "insufficient_inventory") {
+          setStartError(
+            `Only ${body.available} question${body.available === 1 ? "" : "s"} match that setup.`,
+          );
+        } else if (body?.error === "unauthenticated") {
+          setStartError("Your session expired. Reload the page to start a new one.");
+        } else {
+          setStartError("Could not start the quiz. Try again.");
+        }
+        return;
+      }
+
+      router.push(`/quiz/${body.attempt_id}`);
+    } catch {
+      setStartError("Could not reach the server. Try again.");
+    } finally {
+      setStarting(false);
+    }
   }
 
   return (
@@ -92,45 +181,69 @@ export function SetupShell() {
               All topics
             </button>
           </div>
-          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {topicFixtures.map((topic) => {
-              const active = selected.includes(topic.slug);
-              return (
-                <li key={topic.slug}>
-                  <button
-                    type="button"
-                    onClick={() => toggleTopic(topic.slug)}
-                    aria-pressed={active}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-[var(--radius-control)] border p-3 text-left transition-colors",
-                      active
-                        ? "border-primary bg-primary-soft"
-                        : "border-border bg-surface hover:border-border-strong hover:bg-surface-muted",
-                    )}
-                  >
-                    <TopicIcon topic={topic} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[15px] font-medium">{topic.name}</span>
-                      <span className="text-muted-foreground block text-xs leading-snug">
-                        {topic.description}
-                      </span>
-                    </span>
-                    <span
+
+          {loadError ? (
+            <p className="text-danger text-sm" role="alert">
+              {loadError}
+            </p>
+          ) : topics === null ? (
+            <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2" aria-hidden="true">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <li key={index} className="bg-surface-muted h-16 animate-pulse rounded-xl" />
+              ))}
+            </ul>
+          ) : (
+            <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {topics.map((topic) => {
+                const active = selected.includes(topic.slug);
+                const empty = topic.available === 0;
+                return (
+                  <li key={topic.slug}>
+                    <button
+                      type="button"
+                      onClick={() => toggleTopic(topic.slug)}
+                      disabled={empty}
+                      aria-pressed={active}
                       className={cn(
-                        "inline-flex size-5 items-center justify-center rounded-full border",
+                        "flex w-full items-center gap-3 rounded-[var(--radius-control)] border p-3 text-left transition-colors",
                         active
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border-strong",
+                          ? "border-primary bg-primary-soft"
+                          : "border-border bg-surface hover:border-border-strong hover:bg-surface-muted",
+                        empty && "cursor-not-allowed opacity-60",
                       )}
-                      aria-hidden="true"
                     >
-                      {active ? <Check className="size-3" /> : null}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+                      <TopicIcon
+                        topic={{
+                          slug: topic.slug,
+                          name: topic.name,
+                          description: topic.description,
+                          icon: "history",
+                          accent: "blue",
+                        }}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[15px] font-medium">{topic.name}</span>
+                        <span className="text-muted-foreground block text-xs leading-snug">
+                          {empty ? "No questions yet" : `${topic.available} questions`}
+                        </span>
+                      </span>
+                      <span
+                        className={cn(
+                          "inline-flex size-5 items-center justify-center rounded-full border",
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border-strong",
+                        )}
+                        aria-hidden="true"
+                      >
+                        {active ? <Check className="size-3" /> : null}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
 
         <section aria-labelledby="difficulty-heading">
@@ -165,21 +278,21 @@ export function SetupShell() {
             Format
           </h2>
           <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {modes.map(({ value, name, description, Icon, available }) => {
-              const active = mode === value && available;
+            {modes.map(({ value, name, description, Icon, available: modeAvailable }) => {
+              const active = mode === value && modeAvailable;
               return (
                 <li key={value}>
                   <button
                     type="button"
-                    onClick={() => available && setMode(value)}
-                    disabled={!available}
+                    onClick={() => modeAvailable && setMode(value)}
+                    disabled={!modeAvailable}
                     aria-pressed={active}
                     className={cn(
                       "flex h-full w-full flex-col gap-1.5 rounded-[var(--radius-control)] border p-4 text-left transition-colors",
                       active
                         ? "border-primary bg-primary-soft"
                         : "border-border bg-surface hover:border-border-strong",
-                      !available && "hover:border-border cursor-not-allowed opacity-70",
+                      !modeAvailable && "hover:border-border cursor-not-allowed opacity-70",
                     )}
                   >
                     <span className="flex items-center justify-between gap-2">
@@ -187,7 +300,7 @@ export function SetupShell() {
                         className={cn("size-4", active ? "text-primary" : "text-muted-foreground")}
                         aria-hidden="true"
                       />
-                      {available ? null : <Badge>Coming next</Badge>}
+                      {modeAvailable ? null : <Badge>Coming next</Badge>}
                     </span>
                     <span className="text-[15px] font-medium">{name}</span>
                     <span className="text-muted-foreground text-xs leading-relaxed">
@@ -204,14 +317,17 @@ export function SetupShell() {
           <h2 id="count-heading" className="mb-3 text-lg font-semibold tracking-tight">
             Questions
           </h2>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {questionCounts.map((value) => {
-              const active = count === value;
+              const active = !customCount && count === value;
               return (
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setCount(value)}
+                  onClick={() => {
+                    setCount(value);
+                    setCustomCount("");
+                  }}
                   aria-pressed={active}
                   className={cn(
                     "h-10 min-w-14 rounded-[var(--radius-control)] border px-3 text-sm font-medium transition-colors",
@@ -224,6 +340,20 @@ export function SetupShell() {
                 </button>
               );
             })}
+            <label className="text-muted-foreground flex items-center gap-2 text-sm">
+              or
+              <input
+                type="number"
+                inputMode="numeric"
+                min={5}
+                max={50}
+                value={customCount}
+                onChange={(event) => setCustomCount(event.target.value)}
+                placeholder="5–50"
+                aria-label="Custom number of questions"
+                className="border-border-strong bg-surface h-10 w-24 rounded-[var(--radius-control)] border px-3 text-sm"
+              />
+            </label>
           </div>
         </section>
       </div>
@@ -247,23 +377,36 @@ export function SetupShell() {
           </div>
           <div className="flex justify-between gap-4">
             <dt className="text-muted-foreground">Questions</dt>
-            <dd className="font-medium">{count}</dd>
+            <dd className="font-medium">{countValid ? effectiveCount : "—"}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">Available</dt>
+            <dd className="font-medium">{topics === null ? "…" : available}</dd>
           </div>
         </dl>
 
-        <div className="bg-surface-muted text-muted-foreground mt-5 flex items-start gap-2 rounded-[var(--radius-control)] p-3 text-xs leading-relaxed">
-          <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-          <p>
-            The game server is not connected yet, so Start stays disabled. Available question counts
-            appear once the bank is imported.
-          </p>
-        </div>
+        {topics !== null && !enoughQuestions ? (
+          <div className="bg-surface-muted text-muted-foreground mt-4 flex items-start gap-2 rounded-[var(--radius-control)] p-3 text-xs leading-relaxed">
+            <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+            <p>
+              {available === 0
+                ? "No questions match this setup yet. Try another topic."
+                : `This setup has ${available} question${available === 1 ? "" : "s"} available. Choose a smaller count or widen the topics.`}
+            </p>
+          </div>
+        ) : null}
 
-        <Button className="mt-4 w-full" size="lg" disabled aria-describedby="start-note">
-          Start quiz
+        {startError ? (
+          <p className="text-danger mt-3 text-sm" role="alert">
+            {startError}
+          </p>
+        ) : null}
+
+        <Button className="mt-4 w-full" size="lg" disabled={!canStart} onClick={startQuiz}>
+          {starting ? "Starting…" : "Start quiz"}
         </Button>
-        <p id="start-note" className="text-muted-foreground mt-2 text-center text-xs">
-          Playable from the Classic backend milestone.
+        <p className="text-muted-foreground mt-2 text-center text-xs">
+          {countValid ? effectiveCount : "—"} questions · {difficulty}
         </p>
       </Card>
     </div>

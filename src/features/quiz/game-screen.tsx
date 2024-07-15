@@ -1,0 +1,524 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Check, Compass, LogOut, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/cn";
+
+type Option = { id: number; text: string };
+
+type Question = {
+  position: number | null;
+  total: number;
+  type: "mcq" | "comprehension";
+  stem: string | null;
+  statements: string[];
+  prompt: string;
+  options: Option[];
+  finished?: boolean;
+};
+
+type Attempt = {
+  id: string;
+  status: "ready" | "active" | "completed" | "expired" | "abandoned";
+  score: number;
+  question_count: number;
+  correct_count: number;
+  wrong_count: number;
+  skipped_count: number;
+};
+
+type Feedback = {
+  action: "answer" | "skip";
+  is_correct: boolean;
+  points: number;
+  correct_option_id: number;
+  explanation: string | null;
+  score: number;
+};
+
+type Phase =
+  | { name: "loading" }
+  | { name: "error"; message: string }
+  | { name: "question"; question: Question; attempt: Attempt }
+  | { name: "feedback"; question: Question; feedback: Feedback; attempt: Attempt }
+  | { name: "done"; attempt: Attempt }
+  | { name: "quitting" };
+
+export function GameScreen({ attemptId }: { attemptId: string }) {
+  const router = useRouter();
+  const [phase, setPhase] = useState<Phase>({ name: "loading" });
+  const [selected, setSelected] = useState<number | null>(null);
+  const [pending, setPending] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [confirmExit, setConfirmExit] = useState(false);
+  // A stable key per question: retrying a request cannot score the same answer twice.
+  const answerKeys = useRef(new Map<number, string>());
+
+  const keyFor = (position: number) => {
+    const existing = answerKeys.current.get(position);
+    if (existing) return existing;
+    const key = `${attemptId}-${position}-${Math.random().toString(36).slice(2, 10)}`;
+    answerKeys.current.set(position, key);
+    return key;
+  };
+
+  const loadState = useCallback(async () => {
+    const response = await fetch(`/api/attempts/${attemptId}`, { cache: "no-store" });
+
+    if (response.status === 401) {
+      setPhase({ name: "error", message: "Your session ended. Reload to start a guest session." });
+      return;
+    }
+    if (response.status === 404) {
+      setPhase({ name: "error", message: "This quiz does not exist, or belongs to someone else." });
+      return;
+    }
+    const body = await response.json();
+    const attempt: Attempt = body.attempt;
+
+    if (attempt.status === "ready") {
+      const started = await fetch(`/api/attempts/${attemptId}/start`, { method: "POST" });
+      const startedBody = await started.json();
+      if (!started.ok) {
+        setPhase({ name: "error", message: "Could not start this quiz." });
+        return;
+      }
+      setPhase({
+        name: "question",
+        question: startedBody.question,
+        attempt: { ...attempt, status: "active", score: 0 },
+      });
+      return;
+    }
+
+    if (attempt.status === "active" && body.question && body.question.position) {
+      setPhase({ name: "question", question: body.question, attempt });
+      return;
+    }
+
+    setPhase({ name: "done", attempt });
+  }, [attemptId]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function initialise() {
+      try {
+        await loadState();
+      } catch {
+        if (active) {
+          setPhase({ name: "error", message: "Could not reach the server. Reload to try again." });
+        }
+      }
+    }
+
+    void initialise();
+    return () => {
+      active = false;
+    };
+  }, [loadState]);
+
+  async function submit(action: "answer" | "skip") {
+    if (phase.name !== "question" || pending) return;
+    if (action === "answer" && selected === null) return;
+
+    setPending(true);
+    setNotice(null);
+    const position = phase.question.position as number;
+
+    try {
+      const response = await fetch(`/api/attempts/${attemptId}/answer`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          position,
+          action,
+          optionId: action === "answer" ? selected : null,
+          idempotencyKey: keyFor(position),
+        }),
+      });
+      const body = await response.json().catch(() => null);
+
+      if (!response.ok || !body) {
+        setNotice(
+          body?.error === "already_answered"
+            ? "This question was already answered in another tab."
+            : "Could not submit that. Check your connection and try again.",
+        );
+        if (body?.error === "already_answered") await loadState();
+        return;
+      }
+
+      setPhase({
+        name: "feedback",
+        question: phase.question,
+        feedback: body,
+        attempt: { ...phase.attempt, score: body.score },
+      });
+    } catch {
+      setNotice("Could not reach the server. Your answer was not submitted.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function next() {
+    if (phase.name !== "feedback" || pending) return;
+    setPending(true);
+    setNotice(null);
+
+    try {
+      const response = await fetch(`/api/attempts/${attemptId}/next`, { method: "POST" });
+      const body = await response.json().catch(() => null);
+      if (!response.ok || !body) {
+        setNotice("Could not load the next question. Try again.");
+        return;
+      }
+
+      setSelected(null);
+      if (
+        body.attempt?.status === "completed" ||
+        !body.question ||
+        body.question.position === null
+      ) {
+        // The server owns the counters; read the finished attempt back rather than
+        // reporting numbers this screen assembled.
+        const finished = await fetch(`/api/attempts/${attemptId}`, { cache: "no-store" });
+        const finishedBody = await finished.json().catch(() => null);
+        setPhase({
+          name: "done",
+          attempt: finishedBody?.attempt ?? { ...phase.attempt, status: "completed" },
+        });
+        return;
+      }
+
+      setPhase({ name: "question", question: body.question, attempt: phase.attempt });
+    } catch {
+      setNotice("Could not reach the server. Try again.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function quit() {
+    setConfirmExit(false);
+    setPhase({ name: "quitting" });
+    try {
+      await fetch(`/api/attempts/${attemptId}/finish`, { method: "POST" });
+    } finally {
+      router.push("/play");
+    }
+  }
+
+  if (phase.name === "loading" || phase.name === "quitting") {
+    return (
+      <div className="mx-auto w-full max-w-[760px] px-4 py-16" role="status">
+        <p className="text-muted-foreground text-sm">
+          {phase.name === "quitting" ? "Ending this quiz…" : "Loading your quiz…"}
+        </p>
+      </div>
+    );
+  }
+
+  if (phase.name === "error") {
+    return (
+      <div className="mx-auto w-full max-w-[760px] px-4 py-16">
+        <h1 className="text-xl font-semibold tracking-tight">Quiz unavailable</h1>
+        <p className="text-muted-foreground mt-2 text-sm">{phase.message}</p>
+        <Link
+          href="/play"
+          className="text-primary mt-4 inline-flex items-center gap-1 text-sm font-medium hover:underline"
+        >
+          <ArrowLeft className="size-3.5" aria-hidden="true" />
+          Back to setup
+        </Link>
+      </div>
+    );
+  }
+
+  if (phase.name === "done") {
+    const { attempt } = phase;
+    return (
+      <div className="mx-auto w-full max-w-[760px] px-4 py-12">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {attempt.status === "abandoned" ? "Quiz ended early" : "Quiz complete"}
+        </h1>
+        <p className="text-muted-foreground mt-1 text-sm">
+          {attempt.status === "abandoned"
+            ? "This attempt was ended before the last question."
+            : `You answered all ${attempt.question_count} questions.`}
+        </p>
+
+        <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Score", value: attempt.score },
+            { label: "Correct", value: attempt.correct_count },
+            { label: "Wrong", value: attempt.wrong_count },
+            { label: "Skipped", value: attempt.skipped_count },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="border-border bg-surface rounded-[var(--radius-card)] border p-4"
+            >
+              <dt className="text-muted-foreground text-xs">{item.label}</dt>
+              <dd className="mt-1 text-xl font-semibold">{item.value}</dd>
+            </div>
+          ))}
+        </dl>
+
+        <p className="text-muted-foreground bg-surface-muted mt-4 rounded-[var(--radius-control)] p-3 text-xs leading-relaxed">
+          A detailed results and review screen arrives in a later milestone; this page reports the
+          server-stored outcome only.
+        </p>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button onClick={() => router.push("/play")}>Play again</Button>
+          <Link
+            href="/"
+            className="border-border-strong bg-surface inline-flex h-11 items-center rounded-[var(--radius-control)] border px-4 text-[15px] font-medium"
+          >
+            Back to home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const { question, attempt } = phase;
+  const answered = phase.name === "feedback";
+  const position = question.position ?? 0;
+
+  return (
+    <div className="mx-auto w-full max-w-[760px] px-4 pt-4 pb-28 sm:pb-8">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold">
+          <span className="bg-primary text-primary-foreground inline-flex size-7 items-center justify-center rounded-lg">
+            <Compass className="size-4" aria-hidden="true" />
+          </span>
+          Quiz Atlas
+        </Link>
+        <div className="flex items-center gap-3">
+          <Badge>{attempt.score} pts</Badge>
+          <Button variant="quiet" size="sm" onClick={() => setConfirmExit(true)}>
+            <LogOut className="size-4" aria-hidden="true" />
+            Exit
+          </Button>
+        </div>
+      </header>
+
+      <div className="mb-6">
+        <div className="text-muted-foreground mb-2 flex items-center justify-between text-xs font-medium">
+          <span>
+            Question {position} of {question.total}
+          </span>
+          <span className="capitalize">{attempt.status}</span>
+        </div>
+        <div
+          className="bg-surface-muted h-1.5 w-full overflow-hidden rounded-full"
+          role="progressbar"
+          aria-valuemin={1}
+          aria-valuemax={question.total}
+          aria-valuenow={position}
+          aria-label="Quiz progress"
+        >
+          <div
+            className="bg-primary h-full rounded-full transition-[width] duration-300"
+            style={{ width: `${(position / question.total) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      <article>
+        {question.stem ? (
+          <p className="text-muted-foreground mb-3 text-[15px] leading-relaxed">{question.stem}</p>
+        ) : null}
+
+        {question.statements.length > 0 ? (
+          <ol className="bg-surface-muted mb-4 space-y-2 rounded-[var(--radius-control)] p-4 text-[15px] leading-relaxed">
+            {question.statements.map((statement, index) => (
+              <li key={index} className="flex gap-2">
+                <span className="text-muted-foreground shrink-0 font-medium">{index + 1}.</span>
+                <span>{statement}</span>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+
+        <h1 className="text-[22px] leading-snug font-semibold tracking-tight sm:text-[26px]">
+          {question.prompt}
+        </h1>
+
+        <fieldset className="mt-6" disabled={pending || answered}>
+          <legend className="sr-only">Choose one answer</legend>
+          <ul className="space-y-2">
+            {question.options.map((option, index) => {
+              const isSelected = selected === option.id;
+              const isCorrect = answered && phase.feedback.correct_option_id === option.id;
+              const isWrongPick =
+                answered &&
+                phase.feedback.action === "answer" &&
+                selected === option.id &&
+                !isCorrect;
+
+              return (
+                <li key={option.id}>
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-[var(--radius-control)] border p-4 transition-colors",
+                      isCorrect
+                        ? "border-success bg-success-soft"
+                        : isWrongPick
+                          ? "border-danger bg-danger-soft"
+                          : isSelected
+                            ? "border-primary bg-primary-soft"
+                            : "border-border bg-surface hover:border-border-strong",
+                      (pending || answered) && "cursor-default",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="option"
+                      value={option.id}
+                      checked={isSelected}
+                      onChange={() => setSelected(option.id)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={cn(
+                        "mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold",
+                        isCorrect
+                          ? "border-success bg-success text-white"
+                          : isWrongPick
+                            ? "border-danger bg-danger text-white"
+                            : isSelected
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border-strong",
+                      )}
+                      aria-hidden="true"
+                    >
+                      {isCorrect ? (
+                        <Check className="size-3" />
+                      ) : isWrongPick ? (
+                        <X className="size-3" />
+                      ) : (
+                        String.fromCharCode(65 + index)
+                      )}
+                    </span>
+                    <span className="text-[15px] leading-relaxed break-words">{option.text}</span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </fieldset>
+
+        {answered ? (
+          <div
+            className={cn(
+              "mt-5 rounded-[var(--radius-card)] border p-4",
+              phase.feedback.action === "skip"
+                ? "border-border bg-surface-muted"
+                : phase.feedback.is_correct
+                  ? "border-success/50 bg-success-soft"
+                  : "border-danger/50 bg-danger-soft",
+            )}
+            role="status"
+          >
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              {phase.feedback.action === "skip" ? (
+                "Skipped — no points"
+              ) : phase.feedback.is_correct ? (
+                <>
+                  <Check className="text-success size-4" aria-hidden="true" /> Correct · +
+                  {phase.feedback.points} points
+                </>
+              ) : (
+                <>
+                  <X className="text-danger size-4" aria-hidden="true" /> Incorrect — the answer was{" "}
+                  {String.fromCharCode(
+                    65 +
+                      question.options.findIndex((o) => o.id === phase.feedback.correct_option_id),
+                  )}
+                </>
+              )}
+            </p>
+            {phase.feedback.explanation ? (
+              <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+                {phase.feedback.explanation}
+              </p>
+            ) : (
+              <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+                No explanation was supplied for this question.
+              </p>
+            )}
+          </div>
+        ) : null}
+
+        {notice ? (
+          <p className="text-danger mt-4 text-sm" role="alert">
+            {notice}
+          </p>
+        ) : null}
+      </article>
+
+      <div className="border-border bg-background/95 fixed inset-x-0 bottom-0 border-t p-4 backdrop-blur sm:static sm:mt-6 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+        {answered ? (
+          <Button className="w-full sm:w-auto" size="lg" onClick={next} disabled={pending}>
+            {pending ? "Loading…" : "Next question"}
+          </Button>
+        ) : (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              className="w-full sm:w-auto"
+              size="lg"
+              onClick={() => submit("answer")}
+              disabled={pending || selected === null}
+            >
+              {pending ? "Submitting…" : "Submit answer"}
+            </Button>
+            <Button
+              variant="quiet"
+              size="lg"
+              className="w-full sm:w-auto"
+              onClick={() => submit("skip")}
+              disabled={pending}
+            >
+              Skip
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {confirmExit ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="exit-title"
+        >
+          <div className="bg-surface border-border w-full max-w-sm rounded-[var(--radius-card)] border p-5 shadow-xl">
+            <h2 id="exit-title" className="text-base font-semibold">
+              Leave this quiz?
+            </h2>
+            <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
+              The attempt ends now and cannot be resumed. Answers already submitted keep their
+              score.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setConfirmExit(false)}>
+                Keep playing
+              </Button>
+              <Button variant="primary" size="sm" onClick={quit}>
+                End quiz
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
