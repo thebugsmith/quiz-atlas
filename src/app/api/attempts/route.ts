@@ -1,37 +1,49 @@
-import { NextResponse } from "next/server";
-import { createServerSupabase, getVerifiedUser } from "@/lib/supabase/server";
+import { createAttemptSchema } from "@/features/quiz/request-schemas";
+import {
+  gameJson,
+  mapDatabaseError,
+  requireUser,
+  rpc,
+  unauthenticated,
+} from "@/features/quiz/api-helpers";
 
 /**
- * Attempts owned by the caller. The query is scoped by the verified user id and
- * RLS additionally restricts what the cookie can see, so a missing check cannot
- * leak another player's history.
+ * Creates a ready Classic attempt with a frozen question set. The browser sends
+ * its intent; the server decides which questions exist, in what order, and with
+ * which option order.
  */
-export async function GET() {
-  const user = await getVerifiedUser();
-  if (!user) {
-    return NextResponse.json(
-      { error: "unauthenticated" },
-      { status: 401, headers: { "Cache-Control": "private, no-store" } },
+export async function POST(request: Request) {
+  const user = await requireUser();
+  if (!user) return unauthenticated();
+
+  const parsed = createAttemptSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return gameJson(
+      { error: "invalid_request", issues: parsed.error.issues.map((issue) => issue.message) },
+      400,
     );
   }
 
-  const supabase = await createServerSupabase();
-  const { data, error } = await supabase
-    .from("attempts")
-    .select("id, mode, status, score, question_count, created_at, finished_at")
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(20);
+  const { topics, difficulty, count, idempotencyKey } = parsed.data;
+  const { data, error } = await rpc<{
+    attempt_id: string;
+    status: string;
+    question_count: number;
+    reused: boolean;
+  }>("game_create_classic_attempt", {
+    p_attempt_id: crypto.randomUUID(),
+    p_owner: user.id,
+    p_seed: crypto.randomUUID(),
+    p_topics: topics,
+    p_difficulty: difficulty,
+    p_count: count,
+    p_create_key: idempotencyKey,
+  });
 
-  if (error) {
-    return NextResponse.json(
-      { error: "query_failed" },
-      { status: 500, headers: { "Cache-Control": "private, no-store" } },
-    );
+  if (error || !data) {
+    const mapped = error ? mapDatabaseError(error) : null;
+    return mapped ?? gameJson({ error: "create_failed" }, 500);
   }
 
-  return NextResponse.json(
-    { attempts: data ?? [] },
-    { headers: { "Cache-Control": "private, no-store" } },
-  );
+  return gameJson(data, data.reused ? 200 : 201);
 }

@@ -1,44 +1,31 @@
-import { NextResponse } from "next/server";
-import { createServerSupabase, getVerifiedUser } from "@/lib/supabase/server";
+import { getServiceClient } from "@/server/supabase";
+import { gameJson, requireUser, rpc, unauthenticated } from "@/features/quiz/api-helpers";
 
-/**
- * One attempt, only if the verified caller owns it. A wrong owner gets the same
- * 404 as a missing id, so the endpoint cannot be used to probe for other players'
- * attempt ids.
- */
+/** Safe resume state: status, score and the current question only. */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getVerifiedUser();
-  if (!user) {
-    return NextResponse.json(
-      { error: "unauthenticated" },
-      { status: 401, headers: { "Cache-Control": "private, no-store" } },
-    );
-  }
+  const user = await requireUser();
+  if (!user) return unauthenticated();
 
   const { id } = await params;
-  const supabase = await createServerSupabase();
-  const { data, error } = await supabase
+  const { data: attempt, error } = await getServiceClient()
     .from("attempts")
-    .select("id, owner_id, mode, status, score, question_count, created_at, finished_at")
+    .select("id, mode, status, score, question_count, current_position, started_at, finished_at")
     .eq("id", id)
     .eq("owner_id", user.id)
     .maybeSingle();
 
-  if (error) {
-    return NextResponse.json(
-      { error: "query_failed" },
-      { status: 500, headers: { "Cache-Control": "private, no-store" } },
-    );
-  }
-  if (!data) {
-    return NextResponse.json(
-      { error: "not_found" },
-      { status: 404, headers: { "Cache-Control": "private, no-store" } },
-    );
+  if (error) return gameJson({ error: "query_failed" }, 500);
+  if (!attempt) return gameJson({ error: "not_found" }, 404);
+
+  if (attempt.status !== "active") {
+    return gameJson({ attempt, question: null });
   }
 
-  return NextResponse.json(
-    { attempt: data },
-    { headers: { "Cache-Control": "private, no-store" } },
-  );
+  const question = await rpc<Record<string, unknown>>("game_current_question", {
+    p_attempt_id: id,
+    p_owner: user.id,
+  });
+  if (question.error) return gameJson({ error: "query_failed" }, 500);
+
+  return gameJson({ attempt, question: question.data });
 }

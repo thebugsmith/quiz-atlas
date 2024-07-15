@@ -22,6 +22,11 @@ export const metadata: Metadata = {
     template: "%s · Quiz Atlas",
   },
   description: "Choose topics, pick a game format, play, and see how you improve.",
+  other: {
+    // Quiz Atlas ships its own light/dark palette; DarkReader's DOM rewrites break
+    // React hydration, so ask it to leave the page alone.
+    "darkreader-lock": "true",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

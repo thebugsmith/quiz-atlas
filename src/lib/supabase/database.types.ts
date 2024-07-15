@@ -329,6 +329,7 @@ export type Database = {
         Row: {
           config: NonNullable<Json>;
           correct_count: number;
+          create_key: string | null;
           created_at: string;
           current_position: number;
           expires_at: string | null;
@@ -350,6 +351,7 @@ export type Database = {
         Insert: {
           config: NonNullable<Json>;
           correct_count?: number;
+          create_key?: string | null;
           created_at?: string;
           current_position?: number;
           expires_at?: string | null;
@@ -370,6 +372,7 @@ export type Database = {
         Update: {
           config?: NonNullable<Json>;
           correct_count?: number;
+          create_key?: string | null;
           created_at?: string;
           current_position?: number;
           expires_at?: string | null;
@@ -425,7 +428,32 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      game_advance: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
+      game_create_classic_attempt: {
+        Args: {
+          p_attempt_id: string;
+          p_count: number;
+          p_create_key: string;
+          p_difficulty: string;
+          p_owner: string;
+          p_seed: string;
+          p_topics: string[];
+        };
+        Returns: Json;
+      };
+      game_current_question: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
+      game_finish: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
+      game_start_attempt: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
+      game_submit_answer: {
+        Args: {
+          p_attempt_id: string;
+          p_idempotency_key: string;
+          p_option_id: number;
+          p_owner: string;
+          p_position: number;
+        };
+        Returns: Json;
+      };
     };
     Enums: {
       admin_role: "editor" | "admin";

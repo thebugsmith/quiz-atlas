@@ -23,17 +23,22 @@ export function GuestSessionProvider({ children }: { children: React.ReactNode }
     const supabase = getBrowserClient();
 
     async function ensureSession() {
-      const { data } = await supabase.auth.getSession();
-      if (data.session?.user) {
+      // Verify against the auth server: a cookie can outlive the user it refers to
+      // (for example after a database reset), and trusting it would leave the page
+      // "signed in" as nobody.
+      const { data, error: verifyError } = await supabase.auth.getUser();
+      if (data.user && !verifyError) {
         if (!cancelled) {
           setState({
             status: "ready",
-            userId: data.session.user.id,
-            isAnonymous: Boolean(data.session.user.is_anonymous),
+            userId: data.user.id,
+            isAnonymous: Boolean(data.user.is_anonymous),
           });
         }
         return;
       }
+
+      if (verifyError) await supabase.auth.signOut();
 
       const { data: created, error } = await supabase.auth.signInAnonymously();
       if (cancelled) return;
