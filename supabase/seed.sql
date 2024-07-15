@@ -7,7 +7,8 @@ values
   ('science', 'Science', 'Physics, chemistry, biology, and the ideas underneath them.', 'flask-conical', 'violet', 30),
   ('technology', 'Technology', 'Computing, engineering, and how modern tools came to be.', 'cpu', 'blue', 40),
   ('sports', 'Sports', 'Records, competitions, and the stories behind great seasons.', 'trophy', 'rose', 50),
-  ('literature', 'Literature', 'Novels, poems, playwrights, and memorable lines.', 'book-open', 'indigo', 60)
+  ('literature', 'Literature', 'Novels, poems, playwrights, and memorable lines.', 'book-open', 'indigo', 60),
+  ('economy', 'Economy', 'Markets, policy, and how money moves through a country.', 'trending-up', 'emerald', 70)
 on conflict (slug) do update
   set name = excluded.name,
       description = excluded.description,

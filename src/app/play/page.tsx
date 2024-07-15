@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/container";
 import { SetupShell } from "@/features/quiz/setup-shell";
+import { GuestSessionProvider } from "@/features/auth/guest-session";
+import { GuestNotice } from "@/features/auth/guest-notice";
 
 export const metadata: Metadata = {
   title: "Play",
@@ -16,7 +18,10 @@ export default function PlayPage() {
           Nothing here is permanent — you can change any of it before the first question.
         </p>
       </header>
-      <SetupShell />
+      <GuestSessionProvider>
+        <GuestNotice />
+        <SetupShell />
+      </GuestSessionProvider>
     </Container>
   );
 }
