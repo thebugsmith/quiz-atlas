@@ -450,11 +450,7 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
               <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
                 {phase.feedback.explanation}
               </p>
-            ) : (
-              <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-                No explanation was supplied for this question.
-              </p>
-            )}
+            ) : null}
           </div>
         ) : null}
 
