@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Compass, LogOut, X } from "lucide-react";
@@ -55,16 +55,10 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmExit, setConfirmExit] = useState(false);
-  // A stable key per question: retrying a request cannot score the same answer twice.
-  const answerKeys = useRef(new Map<number, string>());
-
-  const keyFor = (position: number) => {
-    const existing = answerKeys.current.get(position);
-    if (existing) return existing;
-    const key = `${attemptId}-${position}-${Math.random().toString(36).slice(2, 10)}`;
-    answerKeys.current.set(position, key);
-    return key;
-  };
+  // Idempotency key per question. It is derived rather than random, so a retry after
+  // a reload still names the same submission and the server can replay the outcome
+  // instead of scoring the answer twice.
+  const keyFor = (position: number) => `${attemptId}-p${position}`;
 
   const loadState = useCallback(async () => {
     const response = await fetch(`/api/attempts/${attemptId}`, { cache: "no-store" });
@@ -122,9 +116,10 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
     };
   }, [loadState]);
 
-  async function submit(action: "answer" | "skip") {
+  async function submit(action: "answer" | "skip", optionId?: number) {
     if (phase.name !== "question" || pending) return;
-    if (action === "answer" && selected === null) return;
+    const chosen = optionId ?? selected;
+    if (action === "answer" && chosen === null) return;
 
     setPending(true);
     setNotice(null);
@@ -137,7 +132,7 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
         body: JSON.stringify({
           position,
           action,
-          optionId: action === "answer" ? selected : null,
+          optionId: action === "answer" ? chosen : null,
           idempotencyKey: keyFor(position),
         }),
       });
@@ -384,7 +379,11 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
                       name="option"
                       value={option.id}
                       checked={isSelected}
-                      onChange={() => setSelected(option.id)}
+                      onChange={() => {
+                        setSelected(option.id);
+                        void submit("answer", option.id);
+                      }}
+                      disabled={pending || answered}
                       className="sr-only"
                     />
                     <span
@@ -467,15 +466,7 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
             {pending ? "Loading…" : "Next question"}
           </Button>
         ) : (
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button
-              className="w-full sm:w-auto"
-              size="lg"
-              onClick={() => submit("answer")}
-              disabled={pending || selected === null}
-            >
-              {pending ? "Submitting…" : "Submit answer"}
-            </Button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Button
               variant="quiet"
               size="lg"
@@ -483,8 +474,11 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
               onClick={() => submit("skip")}
               disabled={pending}
             >
-              Skip
+              {pending ? "Submitting…" : "Skip"}
             </Button>
+            <p className="text-muted-foreground text-center text-xs sm:text-left">
+              Pick an answer to submit it.
+            </p>
           </div>
         )}
       </div>
