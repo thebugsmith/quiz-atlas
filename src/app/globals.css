@@ -112,6 +112,16 @@
   }
 }
 
+/* Feedback countdown: the bar drains as the next question approaches. */
+@keyframes countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

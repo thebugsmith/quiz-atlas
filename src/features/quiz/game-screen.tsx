@@ -48,6 +48,28 @@ type Phase =
   | { name: "done"; attempt: Attempt }
   | { name: "quitting" };
 
+/**
+ * Moves on shortly after feedback appears, so a player can read the explanation
+ * without hunting for a button. Mounted once per feedback, so the timer runs once.
+ */
+function AutoAdvance({ delayMs, onAdvance }: { delayMs: number; onAdvance: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onAdvance, delayMs);
+    return () => clearTimeout(timer);
+    // Intentionally mount-once: `onAdvance` belongs to the feedback being shown.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="bg-primary/20 mt-3 h-1 w-full overflow-hidden rounded-full" aria-hidden="true">
+      <div
+        className="bg-primary h-full w-full origin-left"
+        style={{ animation: `countdown ${delayMs}ms linear forwards` }}
+      />
+    </div>
+  );
+}
+
 export function GameScreen({ attemptId }: { attemptId: string }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ name: "loading" });
@@ -416,41 +438,47 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
         </fieldset>
 
         {answered ? (
-          <div
-            className={cn(
-              "mt-5 rounded-[var(--radius-card)] border p-4",
-              phase.feedback.action === "skip"
-                ? "border-border bg-surface-muted"
-                : phase.feedback.is_correct
-                  ? "border-success/50 bg-success-soft"
-                  : "border-danger/50 bg-danger-soft",
-            )}
-            role="status"
-          >
-            <p className="flex items-center gap-2 text-sm font-semibold">
-              {phase.feedback.action === "skip" ? (
-                "Skipped — no points"
-              ) : phase.feedback.is_correct ? (
-                <>
-                  <Check className="text-success size-4" aria-hidden="true" /> Correct · +
-                  {phase.feedback.points} points
-                </>
-              ) : (
-                <>
-                  <X className="text-danger size-4" aria-hidden="true" /> Incorrect — the answer was{" "}
-                  {String.fromCharCode(
-                    65 +
-                      question.options.findIndex((o) => o.id === phase.feedback.correct_option_id),
-                  )}
-                </>
+          <>
+            <AutoAdvance delayMs={phase.feedback.explanation ? 6000 : 3500} onAdvance={next} />
+            <div
+              className={cn(
+                "mt-5 rounded-[var(--radius-card)] border p-4",
+                phase.feedback.action === "skip"
+                  ? "border-border bg-surface-muted"
+                  : phase.feedback.is_correct
+                    ? "border-success/50 bg-success-soft"
+                    : "border-danger/50 bg-danger-soft",
               )}
-            </p>
-            {phase.feedback.explanation ? (
-              <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-                {phase.feedback.explanation}
+              role="status"
+            >
+              <p className="flex items-center gap-2 text-sm font-semibold">
+                {phase.feedback.action === "skip" ? (
+                  "Skipped — no points"
+                ) : phase.feedback.is_correct ? (
+                  <>
+                    <Check className="text-success size-4" aria-hidden="true" /> Correct · +
+                    {phase.feedback.points} points
+                  </>
+                ) : (
+                  <>
+                    <X className="text-danger size-4" aria-hidden="true" /> Incorrect — the answer
+                    was{" "}
+                    {String.fromCharCode(
+                      65 +
+                        question.options.findIndex(
+                          (o) => o.id === phase.feedback.correct_option_id,
+                        ),
+                    )}
+                  </>
+                )}
               </p>
-            ) : null}
-          </div>
+              {phase.feedback.explanation ? (
+                <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+                  {phase.feedback.explanation}
+                </p>
+              ) : null}
+            </div>
+          </>
         ) : null}
 
         {notice ? (
@@ -463,7 +491,7 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
       <div className="border-border bg-background/95 fixed inset-x-0 bottom-0 border-t p-4 backdrop-blur sm:static sm:mt-6 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
         {answered ? (
           <Button className="w-full sm:w-auto" size="lg" onClick={next} disabled={pending}>
-            {pending ? "Loading…" : "Next question"}
+            {pending ? "Loading…" : "Next now"}
           </Button>
         ) : (
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
