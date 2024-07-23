@@ -156,6 +156,10 @@ export function SetupShell() {
         return;
       }
 
+      // The key belongs to this start only. Keeping it would make the next "Start
+      // quiz" resolve to the same attempt — which, once finished, shows that old
+      // result instead of a new quiz.
+      createKey.current = null;
       router.push(`/quiz/${body.attempt_id}`);
     } catch {
       setStartError("Could not reach the server. Try again.");
