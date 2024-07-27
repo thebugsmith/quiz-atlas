@@ -3,6 +3,7 @@ import { Container } from "@/components/ui/container";
 import { GuestSessionProvider } from "@/features/auth/guest-session";
 import { GuestNotice } from "@/features/auth/guest-notice";
 import { SetupShell } from "@/features/quiz/setup-shell";
+import { parseSetupParams } from "@/features/quiz/setup-params";
 
 export const metadata: Metadata = {
   title: "Play",
@@ -14,34 +15,38 @@ export const metadata: Metadata = {
 export const instant = false;
 
 /**
- * Topics arrive from the home page (`/play?topics=geography` or `?topics=a,b`).
- * Without the parameter the player gets the mixed setup, where they can narrow the
- * selection themselves.
+ * Everything a player chooses can arrive in the URL (`/play?topics=geography&
+ * difficulty=hard&count=20`), which makes the setup shareable and resumable. With
+ * `quick=1` the screen collapses to a summary and a single Start button.
  */
 export default async function PlayPage({
   searchParams,
 }: {
-  searchParams: Promise<{ topics?: string | string[] }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const params = await searchParams;
-  const raw = Array.isArray(params.topics) ? params.topics.join(",") : (params.topics ?? "");
-  const selectedTopics = raw
-    .split(",")
-    .map((slug) => slug.trim())
-    .filter(Boolean)
-    .slice(0, 8);
+  const setup = parseSetupParams(await searchParams);
 
   return (
     <Container>
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Set up a quiz</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          {setup.quick ? "Quick play" : "Set up a quiz"}
+        </h1>
         <p className="text-muted-foreground mt-1.5 max-w-prose text-[15px]">
-          Nothing here is permanent — you can change any of it before the first question.
+          {setup.quick
+            ? "Ten mixed questions from every topic. Change the setup if you want something else."
+            : "Nothing here is permanent — you can change any of it before the first question."}
         </p>
       </header>
       <GuestSessionProvider>
         <GuestNotice />
-        <SetupShell initialTopics={selectedTopics} />
+        <SetupShell
+          initialTopics={setup.topics}
+          initialDifficulty={setup.difficulty}
+          initialCount={setup.count}
+          quick={setup.quick}
+          problems={setup.problems}
+        />
       </GuestSessionProvider>
     </Container>
   );

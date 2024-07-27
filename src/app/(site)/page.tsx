@@ -26,7 +26,7 @@ export default function Home() {
               wrong guess is still a useful one.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              <ButtonLink href="/play" size="lg">
+              <ButtonLink href="/play?quick=1" size="lg">
                 Play now
                 <ArrowRight className="size-4" aria-hidden="true" />
               </ButtonLink>
