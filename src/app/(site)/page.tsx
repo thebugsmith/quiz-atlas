@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Clock3, Flame, Sparkles } from "lucide-react";
+import { ArrowRight, Clock3, Flame, Shuffle, Sparkles } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Card, CardBody, CardTitle } from "@/components/ui/card";
 import { ButtonLink } from "@/components/ui/button";
@@ -54,6 +54,22 @@ export default function Home() {
             }
           />
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <li>
+              <Link
+                href="/play"
+                className="group border-primary/40 bg-primary-soft hover:border-primary flex h-full items-start gap-3 rounded-[var(--radius-card)] border p-4 transition-colors"
+              >
+                <span className="bg-primary text-primary-foreground inline-flex size-10 shrink-0 items-center justify-center rounded-xl">
+                  <Shuffle className="size-5" aria-hidden="true" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[15px] font-medium">Mix all topics</span>
+                  <span className="text-muted-foreground mt-0.5 block text-sm leading-relaxed break-words">
+                    Questions from everything, or narrow it down on the setup screen.
+                  </span>
+                </span>
+              </Link>
+            </li>
             {topicFixtures.map((topic) => (
               <li key={topic.slug}>
                 <Link

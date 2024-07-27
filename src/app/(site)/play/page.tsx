@@ -1,15 +1,36 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/container";
-import { SetupShell } from "@/features/quiz/setup-shell";
 import { GuestSessionProvider } from "@/features/auth/guest-session";
 import { GuestNotice } from "@/features/auth/guest-notice";
+import { SetupShell } from "@/features/quiz/setup-shell";
 
 export const metadata: Metadata = {
   title: "Play",
   description: "Choose topics, difficulty, and a game format.",
 };
 
-export default function PlayPage() {
+// The setup is shareable through the URL, so this route is rendered per request
+// instead of being generated once with an empty selection.
+export const instant = false;
+
+/**
+ * Topics arrive from the home page (`/play?topics=geography` or `?topics=a,b`).
+ * Without the parameter the player gets the mixed setup, where they can narrow the
+ * selection themselves.
+ */
+export default async function PlayPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ topics?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const raw = Array.isArray(params.topics) ? params.topics.join(",") : (params.topics ?? "");
+  const selectedTopics = raw
+    .split(",")
+    .map((slug) => slug.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+
   return (
     <Container>
       <header className="mb-6">
@@ -20,7 +41,7 @@ export default function PlayPage() {
       </header>
       <GuestSessionProvider>
         <GuestNotice />
-        <SetupShell />
+        <SetupShell initialTopics={selectedTopics} />
       </GuestSessionProvider>
     </Container>
   );

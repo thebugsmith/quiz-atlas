@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Info, Layers, Timer, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -66,11 +67,16 @@ type TopicSummary = {
 
 const questionCounts = [5, 10, 20, 50] as const;
 
-export function SetupShell() {
+/**
+ * `initialTopics` comes from the home page. When it names topics, those are locked in
+ * and the picker is hidden; with none, the setup is mixed and the picker is shown.
+ */
+export function SetupShell({ initialTopics = [] }: { initialTopics?: string[] }) {
   const router = useRouter();
   const [topics, setTopics] = useState<TopicSummary[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(initialTopics);
+  const [locked, setLocked] = useState(initialTopics.length > 0);
   const [difficulty, setDifficulty] = useState<DifficultyValue>("mixed");
   const [mode, setMode] = useState<ModeOption["value"]>("classic");
   const [count, setCount] = useState<(typeof questionCounts)[number]>(10);
@@ -87,7 +93,20 @@ export function SetupShell() {
     fetch("/api/topics")
       .then((response) => response.json())
       .then((body) => {
-        if (!cancelled) setTopics(body.topics ?? []);
+        if (cancelled) return;
+        const loaded: TopicSummary[] = body.topics ?? [];
+        setTopics(loaded);
+        // A shared link may name a topic that no longer exists; fall back to mixed
+        // rather than starting a quiz that can only fail.
+        if (initialTopics.length > 0) {
+          const known = initialTopics.filter((slug) => loaded.some((t) => t.slug === slug));
+          if (known.length === 0) {
+            setLocked(false);
+            setSelected([]);
+          } else {
+            setSelected(known);
+          }
+        }
       })
       .catch(() => {
         if (!cancelled) setLoadError("Could not load topics. Try reloading the page.");
@@ -95,7 +114,9 @@ export function SetupShell() {
     return () => {
       cancelled = true;
     };
-  }, []);
+    // The topics list is loaded once per visit; the incoming selection is a server
+    // prop that does not change while this screen is mounted.
+  }, [initialTopics]);
 
   const allSelected = selected.length === 0;
   const selectedNames = allSelected
@@ -112,7 +133,10 @@ export function SetupShell() {
       .reduce((total, topic) => total + topic.available, 0);
   }, [topics, selected, allSelected]);
 
-  const effectiveCount = customCount ? Number(customCount) : count;
+  // A shared link can name a topic with fewer questions than the default count; the
+  // setup then defaults to what the topic actually has instead of disabling Start.
+  const autoCount = locked && available > 0 && available < count ? available : null;
+  const effectiveCount = customCount ? Number(customCount) : (autoCount ?? count);
   const countValid =
     Number.isInteger(effectiveCount) && effectiveCount >= 5 && effectiveCount <= 50;
   const enoughQuestions = countValid && available >= effectiveCount;
@@ -176,17 +200,42 @@ export function SetupShell() {
             <h2 id="topics-heading" className="text-lg font-semibold tracking-tight">
               Topics
             </h2>
-            <button
-              type="button"
-              onClick={() => setSelected([])}
-              disabled={allSelected}
-              className="text-primary disabled:text-muted-foreground text-sm font-medium hover:underline disabled:no-underline"
-            >
-              All topics
-            </button>
+            {locked ? (
+              <Link href="/" className="text-primary text-sm font-medium hover:underline">
+                Change
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setSelected([])}
+                disabled={allSelected}
+                className="text-primary disabled:text-muted-foreground text-sm font-medium hover:underline disabled:no-underline"
+              >
+                Mix all topics
+              </button>
+            )}
           </div>
 
-          {loadError ? (
+          {locked ? (
+            <div className="flex flex-wrap gap-2">
+              {(topics ?? [])
+                .filter((topic) => selected.includes(topic.slug))
+                .map((topic) => (
+                  <Badge key={topic.slug} tone="primary">
+                    {topic.name}
+                    <span className="text-muted-foreground">· {topic.available}</span>
+                  </Badge>
+                ))}
+              {topics === null ? (
+                <span className="text-muted-foreground text-sm">Loading…</span>
+              ) : null}
+              {topics !== null && selected.length === 0 ? (
+                <span className="text-muted-foreground text-sm">No topics selected.</span>
+              ) : null}
+            </div>
+          ) : null}
+
+          {locked ? null : loadError ? (
             <p className="text-danger text-sm" role="alert">
               {loadError}
             </p>
