@@ -45,6 +45,9 @@ type Phase =
   | { name: "error"; message: string }
   | { name: "question"; question: Question; attempt: Attempt }
   | { name: "feedback"; question: Question; feedback: Feedback; attempt: Attempt }
+  // The stored attempt says this question was already answered (another tab, or the
+  // response to our submission was lost). We do not invent an outcome; we offer Next.
+  | { name: "stale"; question: Question; attempt: Attempt }
   | { name: "done"; attempt: Attempt }
   | { name: "quitting" };
 
@@ -112,6 +115,10 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
     }
 
     if (attempt.status === "active" && body.question && body.question.position) {
+      if (body.question.answered) {
+        setPhase({ name: "stale", question: body.question, attempt });
+        return;
+      }
       setPhase({ name: "question", question: body.question, attempt });
       return;
     }
@@ -138,6 +145,24 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
     };
   }, [loadState]);
 
+  useEffect(() => {
+    // Two tabs, or a tab left in the background: on return, trust the stored attempt
+    // rather than whatever this tab last drew.
+    function reconcile() {
+      if (document.visibilityState !== "visible") return;
+      if (pending) return;
+      if (phase.name !== "question" && phase.name !== "stale") return;
+      void loadState().catch(() => undefined);
+    }
+
+    window.addEventListener("focus", reconcile);
+    document.addEventListener("visibilitychange", reconcile);
+    return () => {
+      window.removeEventListener("focus", reconcile);
+      document.removeEventListener("visibilitychange", reconcile);
+    };
+  }, [loadState, pending, phase.name]);
+
   async function submit(action: "answer" | "skip", optionId?: number) {
     if (phase.name !== "question" || pending) return;
     const chosen = optionId ?? selected;
@@ -147,17 +172,28 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
     setNotice(null);
     const position = phase.question.position as number;
 
-    try {
-      const response = await fetch(`/api/attempts/${attemptId}/answer`, {
+    const sendAnswer = () =>
+      fetch(`/api/attempts/${attemptId}/answer`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           position,
           action,
           optionId: action === "answer" ? chosen : null,
+          // Derived from the attempt and position, so a retry after a lost response is
+          // recognised as the same submission and replayed, not scored twice.
           idempotencyKey: keyFor(position),
         }),
       });
+
+    try {
+      let response: Response;
+      try {
+        response = await sendAnswer();
+      } catch {
+        // One automatic retry: the usual cause is a dropped connection, not a bad request.
+        response = await sendAnswer();
+      }
       const body = await response.json().catch(() => null);
 
       if (!response.ok || !body) {
@@ -184,7 +220,7 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
   }
 
   async function next() {
-    if (phase.name !== "feedback" || pending) return;
+    if ((phase.name !== "feedback" && phase.name !== "stale") || pending) return;
     setPending(true);
     setNotice(null);
 
@@ -257,17 +293,51 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
     );
   }
 
+  if (phase.name === "stale") {
+    return (
+      <div className="mx-auto w-full max-w-[760px] px-4 py-16">
+        <h1 className="text-xl font-semibold tracking-tight">Already answered</h1>
+        <p className="text-muted-foreground mt-2 text-sm">
+          Question {phase.question.position} of {phase.question.total} was answered in another tab,
+          so this one is out of date. Your score already includes it.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button onClick={next} disabled={pending}>
+            {pending ? "Loading…" : "Continue"}
+          </Button>
+          <Link
+            href="/play"
+            className="border-border-strong bg-surface inline-flex h-11 items-center rounded-[var(--radius-control)] border px-4 text-[15px] font-medium"
+          >
+            Back to setup
+          </Link>
+        </div>
+        {notice ? (
+          <p className="text-danger mt-4 text-sm" role="alert">
+            {notice}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
   if (phase.name === "done") {
     const { attempt } = phase;
     return (
       <div className="mx-auto w-full max-w-[760px] px-4 py-12">
         <h1 className="text-2xl font-semibold tracking-tight">
-          {attempt.status === "abandoned" ? "Quiz ended early" : "Quiz complete"}
+          {attempt.status === "completed"
+            ? "Quiz complete"
+            : attempt.status === "expired"
+              ? "This quiz expired"
+              : "Quiz ended early"}
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          {attempt.status === "abandoned"
-            ? "This attempt was ended before the last question."
-            : `You answered all ${attempt.question_count} questions.`}
+          {attempt.status === "completed"
+            ? `You answered all ${attempt.question_count} questions.`
+            : attempt.status === "expired"
+              ? "It was never started, and unused quizzes expire after an hour."
+              : "This attempt was ended before the last question."}
         </p>
 
         <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
