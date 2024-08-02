@@ -44,6 +44,8 @@ export default async function PlayPage({
           initialTopics={setup.topics}
           initialDifficulty={setup.difficulty}
           initialCount={setup.count}
+          initialMode={setup.mode}
+          initialSource={setup.source}
           quick={setup.quick}
           problems={setup.problems}
         />

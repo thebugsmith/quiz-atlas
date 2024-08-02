@@ -5,10 +5,15 @@ export type Difficulty = (typeof difficultyValues)[number];
 
 export const countSchema = z.coerce.number().int().min(5).max(50);
 
+export type SetupMode = "classic" | "time-rush" | "practice";
+export type PracticeSource = "topics" | "bookmarks" | "missed";
+
 export type SetupParams = {
   topics: string[];
   difficulty: Difficulty;
   count: number | null;
+  mode: SetupMode;
+  source: PracticeSource;
   quick: boolean;
   problems: string[];
 };
@@ -51,7 +56,37 @@ export function parseSetupParams(params: RawParams): SetupParams {
     else problems.push("count must be a whole number between 5 and 50");
   }
 
-  return { topics, difficulty, count, quick: first(params.quick) === "1", problems };
+  const rawMode = first(params.mode).toLowerCase();
+  let mode: SetupMode = "classic";
+  if (rawMode) {
+    if (rawMode === "classic" || rawMode === "practice") {
+      mode = rawMode;
+    } else if (rawMode === "time-rush" || rawMode === "time_rush") {
+      mode = "time-rush";
+    } else {
+      problems.push(`mode "${rawMode}" is not one of classic, time_rush, practice`);
+    }
+  }
+
+  const rawSource = first(params.source).toLowerCase();
+  let source: PracticeSource = "topics";
+  if (rawSource) {
+    if (rawSource === "topics" || rawSource === "bookmarks" || rawSource === "missed") {
+      source = rawSource;
+    } else {
+      problems.push(`source "${rawSource}" is not one of topics, bookmarks, missed`);
+    }
+  }
+
+  return {
+    topics,
+    difficulty,
+    count,
+    mode,
+    source,
+    quick: first(params.quick) === "1",
+    problems,
+  };
 }
 
 /** Rebuilds the query string for the current setup, omitting defaults. */
@@ -59,11 +94,15 @@ export function buildSetupQuery(setup: {
   topics: string[];
   difficulty: Difficulty;
   count: number;
+  mode?: SetupMode;
+  source?: PracticeSource;
 }) {
   const query = new URLSearchParams();
   if (setup.topics.length > 0) query.set("topics", setup.topics.join(","));
   if (setup.difficulty !== "mixed") query.set("difficulty", setup.difficulty);
   if (setup.count !== 10) query.set("count", String(setup.count));
+  if (setup.mode && setup.mode !== "classic") query.set("mode", setup.mode);
+  if (setup.source && setup.source !== "topics") query.set("source", setup.source);
   const qs = query.toString();
   return qs ? `?${qs}` : "";
 }

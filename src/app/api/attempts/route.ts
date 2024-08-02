@@ -24,7 +24,33 @@ export async function POST(request: Request) {
     );
   }
 
-  const { mode, topics, difficulty, count, durationSeconds, idempotencyKey } = parsed.data;
+  const { mode, source, topics, difficulty, count, durationSeconds, idempotencyKey } = parsed.data;
+
+  if (mode === "practice") {
+    const practice = await rpc<{
+      attempt_id: string;
+      status: string;
+      mode: string;
+      question_count: number;
+      reused: boolean;
+    }>("game_create_practice_attempt", {
+      p_attempt_id: crypto.randomUUID(),
+      p_owner: user.id,
+      p_seed: crypto.randomUUID(),
+      p_source: source,
+      p_topics: topics,
+      p_difficulty: difficulty,
+      p_count: count,
+      p_create_key: idempotencyKey,
+    });
+
+    if (practice.error || !practice.data) {
+      const mapped = practice.error ? mapDatabaseError(practice.error) : null;
+      return mapped ?? gameJson({ error: "create_failed" }, 500);
+    }
+    return gameJson(practice.data, practice.data.reused ? 200 : 201);
+  }
+
   const { data, error } = await rpc<{
     attempt_id: string;
     status: string;

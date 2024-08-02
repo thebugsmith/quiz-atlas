@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Info, Layers, Timer, Trophy } from "lucide-react";
+import { Bookmark, Check, Info, Layers, Timer, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -37,9 +37,9 @@ const modes: ModeOption[] = [
   {
     value: "practice",
     name: "Practice",
-    description: "Untimed, explanations straight away, bookmarks included.",
-    Icon: Trophy,
-    available: false,
+    description: "Untimed, from topics, your bookmarks or questions you missed.",
+    Icon: Bookmark,
+    available: true,
   },
   {
     value: "survival",
@@ -72,6 +72,8 @@ type SetupShellProps = {
   initialTopics?: string[];
   initialDifficulty?: DifficultyValue;
   initialCount?: number | null;
+  initialMode?: "classic" | "time-rush" | "practice";
+  initialSource?: "topics" | "bookmarks" | "missed";
   quick?: boolean;
   problems?: string[];
 };
@@ -86,6 +88,8 @@ export function SetupShell({
   initialTopics = [],
   initialDifficulty = "mixed",
   initialCount = null,
+  initialMode = "classic",
+  initialSource = "topics",
   quick = false,
   problems = [],
 }: SetupShellProps) {
@@ -98,9 +102,11 @@ export function SetupShell({
   const [selected, setSelected] = useState<string[]>(initialTopics);
   const [locked, setLocked] = useState(initialTopics.length > 0);
   const [difficulty, setDifficulty] = useState<DifficultyValue>(initialDifficulty);
-  const [mode, setMode] = useState<ModeOption["value"]>("classic");
+  const [mode, setMode] = useState<ModeOption["value"]>(initialMode);
   const [duration, setDuration] = useState<30 | 60 | 120>(60);
+  const [source, setSource] = useState<"topics" | "bookmarks" | "missed">(initialSource);
   const timed = mode === "time-rush";
+  const practising = mode === "practice";
   const presetCount = questionCounts.find((value) => value === initialCount);
   const [count, setCount] = useState<(typeof questionCounts)[number]>(presetCount ?? 10);
   const [customCount, setCustomCount] = useState(
@@ -181,8 +187,10 @@ export function SetupShell({
   const effectiveCount = customCount ? Number(customCount) : count;
   const countValid =
     Number.isInteger(effectiveCount) && effectiveCount >= 5 && effectiveCount <= 50;
-  // Time Rush only needs a non-empty pool: the queue is whatever fits, capped at 200.
-  const enoughQuestions = timed ? available > 0 : countValid && available >= effectiveCount;
+  // Practice and Time Rush only need a non-empty pool; the server reports the real
+  // availability for bookmarks and missed questions when the attempt is created.
+  const enoughQuestions =
+    timed || practising ? available > 0 : countValid && available >= effectiveCount;
   const canStart = !starting && topics !== null && enoughQuestions;
 
   // Keep the URL shareable: the address bar always describes the current setup.
@@ -193,9 +201,11 @@ export function SetupShell({
       topics: locked ? selected : [],
       difficulty,
       count: countValid ? effectiveCount : 10,
+      mode: mode === "classic" || mode === "time-rush" || mode === "practice" ? mode : "classic",
+      source,
     });
     window.history.replaceState(null, "", `/play${query}`);
-  }, [quick, locked, selected, difficulty, countValid, effectiveCount]);
+  }, [quick, locked, selected, difficulty, countValid, effectiveCount, mode, source]);
 
   function toggleTopic(slug: string) {
     setSelected((current) =>
@@ -214,7 +224,8 @@ export function SetupShell({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          mode: timed ? "time_rush" : "classic",
+          mode: timed ? "time_rush" : practising ? "practice" : "classic",
+          source: practising ? source : "topics",
           topics: allSelected ? (topics ?? []).map((topic) => topic.slug) : selected,
           difficulty,
           count: effectiveCount,
@@ -447,6 +458,41 @@ export function SetupShell({
                 })}
               </ul>
             </section>
+
+            {practising ? (
+              <section aria-labelledby="source-heading">
+                <h2 id="source-heading" className="mb-3 text-lg font-semibold tracking-tight">
+                  Practice from
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      { value: "topics", label: "These topics" },
+                      { value: "bookmarks", label: "Bookmarks" },
+                      { value: "missed", label: "Questions I missed" },
+                    ] as const
+                  ).map((option) => {
+                    const active = source === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setSource(option.value)}
+                        aria-pressed={active}
+                        className={cn(
+                          "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-surface text-muted-foreground hover:border-border-strong hover:text-foreground",
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
 
             <section aria-labelledby="count-heading">
               <h2 id="count-heading" className="mb-3 text-lg font-semibold tracking-tight">

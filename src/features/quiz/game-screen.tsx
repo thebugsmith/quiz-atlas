@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Compass, LogOut, X } from "lucide-react";
+import { ArrowLeft, Bookmark, Check, Compass, Eye, LogOut, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -13,6 +13,8 @@ type Option = { id: number; text: string };
 type Question = {
   position: number | null;
   total: number;
+  question_id?: string;
+  bookmarked?: boolean;
   type: "mcq" | "comprehension";
   stem: string | null;
   statements: string[];
@@ -23,7 +25,7 @@ type Question = {
 
 type Attempt = {
   id: string;
-  mode: "classic" | "time_rush";
+  mode: "classic" | "time_rush" | "practice";
   status: "ready" | "active" | "completed" | "expired" | "abandoned";
   expires_at?: string | null;
   score: number;
@@ -34,7 +36,7 @@ type Attempt = {
 };
 
 type Feedback = {
-  action: "answer" | "skip";
+  action: "answer" | "skip" | "reveal";
   is_correct: boolean;
   points: number;
   correct_option_id: number;
@@ -211,7 +213,7 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
     };
   }, [loadState, pending, phase.name]);
 
-  async function submit(action: "answer" | "skip", optionId?: number) {
+  async function submit(action: "answer" | "skip" | "reveal", optionId?: number) {
     if (phase.name !== "question" || pending) return;
     const chosen = optionId ?? selected;
     if (action === "answer" && chosen === null) return;
@@ -268,6 +270,22 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
       setNotice("Could not reach the server. Your answer was not submitted.");
     } finally {
       setPending(false);
+    }
+  }
+
+  async function toggleBookmark() {
+    if (phase.name !== "question" || !phase.question.question_id) return;
+    const questionId = phase.question.question_id;
+    const nextValue = !phase.question.bookmarked;
+    setPhase({ ...phase, question: { ...phase.question, bookmarked: nextValue } });
+    const response = await fetch("/api/bookmarks", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ questionId, bookmarked: nextValue }),
+    }).catch(() => null);
+    if (!response?.ok) {
+      setPhase({ ...phase, question: { ...phase.question, bookmarked: !nextValue } });
+      setNotice("Could not update that bookmark.");
     }
   }
 
@@ -441,6 +459,23 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
               {Math.ceil(remainingMs / 1000)}s left
             </Badge>
           ) : null}
+          {question.question_id ? (
+            <Button
+              variant="quiet"
+              size="sm"
+              onClick={toggleBookmark}
+              aria-pressed={Boolean(question.bookmarked)}
+              title={question.bookmarked ? "Remove bookmark" : "Bookmark this question"}
+            >
+              <Bookmark
+                className={question.bookmarked ? "size-4 fill-current" : "size-4"}
+                aria-hidden="true"
+              />
+              <span className="sr-only">
+                {question.bookmarked ? "Remove bookmark" : "Bookmark this question"}
+              </span>
+            </Button>
+          ) : null}
           <Badge>{attempt.score} pts</Badge>
           <Button variant="quiet" size="sm" onClick={() => setConfirmExit(true)}>
             <LogOut className="size-4" aria-hidden="true" />
@@ -570,7 +605,7 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
             <div
               className={cn(
                 "mt-5 rounded-[var(--radius-card)] border p-4",
-                phase.feedback.action === "skip"
+                phase.feedback.action === "skip" || phase.feedback.action === "reveal"
                   ? "border-border bg-surface-muted"
                   : phase.feedback.is_correct
                     ? "border-success/50 bg-success-soft"
@@ -579,7 +614,9 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
               role="status"
             >
               <p className="flex items-center gap-2 text-sm font-semibold">
-                {phase.feedback.action === "skip" ? (
+                {phase.feedback.action === "reveal" ? (
+                  "Answer revealed — no points"
+                ) : phase.feedback.action === "skip" ? (
                   "Skipped — no points"
                 ) : phase.feedback.is_correct ? (
                   <>
@@ -631,6 +668,18 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
             >
               {pending ? "Submitting…" : "Skip"}
             </Button>
+            {attempt.mode === "practice" ? (
+              <Button
+                variant="secondary"
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={() => submit("reveal")}
+                disabled={pending}
+              >
+                <Eye className="size-4" aria-hidden="true" />
+                Reveal answer
+              </Button>
+            ) : null}
             <p className="text-muted-foreground text-center text-xs sm:text-left">
               Pick an answer to submit it.
             </p>
