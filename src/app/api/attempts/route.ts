@@ -8,9 +8,9 @@ import {
 } from "@/features/quiz/api-helpers";
 
 /**
- * Creates a ready Classic attempt with a frozen question set. The browser sends
- * its intent; the server decides which questions exist, in what order, and with
- * which option order.
+ * Creates a ready attempt with a frozen question set. The browser sends its intent;
+ * the server decides which questions exist, in what order, with which option order,
+ * and — for Time Rush — what the queue length is.
  */
 export async function POST(request: Request) {
   const user = await requireUser();
@@ -24,19 +24,22 @@ export async function POST(request: Request) {
     );
   }
 
-  const { topics, difficulty, count, idempotencyKey } = parsed.data;
+  const { mode, topics, difficulty, count, durationSeconds, idempotencyKey } = parsed.data;
   const { data, error } = await rpc<{
     attempt_id: string;
     status: string;
+    mode: string;
     question_count: number;
     reused: boolean;
-  }>("game_create_classic_attempt", {
+  }>("game_create_attempt", {
     p_attempt_id: crypto.randomUUID(),
     p_owner: user.id,
     p_seed: crypto.randomUUID(),
+    p_mode: mode,
     p_topics: topics,
     p_difficulty: difficulty,
     p_count: count,
+    p_duration_seconds: durationSeconds ?? null,
     p_create_key: idempotencyKey,
   });
 

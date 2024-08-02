@@ -158,15 +158,20 @@ export function ResultsScreen({ attemptId }: { attemptId: string }) {
           {attempt.mode.replace("_", " ")} · rules v{attempt.rules_version}
         </p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
-          {attempt.status === "completed"
-            ? "Quiz complete"
-            : attempt.status === "expired"
-              ? "This quiz expired"
-              : "Quiz ended early"}
+          {attempt.status === "expired"
+            ? "This quiz expired"
+            : attempt.status === "abandoned"
+              ? "Quiz ended early"
+              : attempt.mode === "time_rush"
+                ? "Time's up"
+                : "Quiz complete"}
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          {attempt.correct_count} of {attempt.question_count} correct ·{" "}
-          {attempt.status === "abandoned" ? "ended before the last question" : "full attempt"}
+          {attempt.mode === "time_rush"
+            ? `${attempt.answered_count} answered · ${attempt.correct_count} correct · ${attempt.wrong_count} wrong`
+            : `${attempt.correct_count} of ${attempt.question_count} correct · ${
+                attempt.status === "abandoned" ? "ended before the last question" : "full attempt"
+              }`}
         </p>
       </header>
 

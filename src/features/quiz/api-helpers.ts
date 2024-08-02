@@ -43,6 +43,12 @@ export function mapDatabaseError(message: string) {
       return gameJson({ error: "invalid_count" }, 400);
     case "already_answered":
       return gameJson({ error: "already_answered" }, 409);
+    case "deadline_passed":
+      return gameJson({ error: "deadline_passed" }, 409);
+    case "invalid_duration":
+      return gameJson({ error: "invalid_duration" }, 400);
+    case "unsupported_mode":
+      return gameJson({ error: "unsupported_mode" }, 400);
     case "not_ready_to_advance":
       return gameJson({ error: "not_ready_to_advance" }, 409);
     default:

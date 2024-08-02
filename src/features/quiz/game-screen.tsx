@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Compass, LogOut, X } from "lucide-react";
@@ -23,7 +23,9 @@ type Question = {
 
 type Attempt = {
   id: string;
+  mode: "classic" | "time_rush";
   status: "ready" | "active" | "completed" | "expired" | "abandoned";
+  expires_at?: string | null;
   score: number;
   question_count: number;
   correct_count: number;
@@ -80,6 +82,10 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmExit, setConfirmExit] = useState(false);
+  // Time Rush: the deadline comes from the server, and only the server decides
+  // whether an answer was in time. The browser clock is used for display only.
+  const [remainingMs, setRemainingMs] = useState<number | null>(null);
+  const clockOffset = useRef(0);
   // Idempotency key per question. It is derived rather than random, so a retry after
   // a reload still names the same submission and the server can replay the outcome
   // instead of scoring the answer twice.
@@ -99,6 +105,11 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
     const body = await response.json();
     const attempt: Attempt = body.attempt;
 
+    // Server clock offset, so a wrong or changed local clock cannot buy time.
+    if (body.server_now) {
+      clockOffset.current = new Date(body.server_now).getTime() - Date.now();
+    }
+
     if (attempt.status === "ready") {
       const started = await fetch(`/api/attempts/${attemptId}/start`, { method: "POST" });
       const startedBody = await started.json();
@@ -106,15 +117,26 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
         setPhase({ name: "error", message: "Could not start this quiz." });
         return;
       }
-      setPhase({
-        name: "question",
-        question: startedBody.question,
-        attempt: { ...attempt, status: "active", score: 0 },
-      });
+      const active: Attempt = {
+        ...attempt,
+        status: "active",
+        score: 0,
+        expires_at: startedBody.attempt?.expires_at ?? null,
+      };
+      if (startedBody.attempt?.server_now) {
+        clockOffset.current = new Date(startedBody.attempt.server_now).getTime() - Date.now();
+      }
+      if (active.expires_at) {
+        setRemainingMs(new Date(active.expires_at).getTime() - (Date.now() + clockOffset.current));
+      }
+      setPhase({ name: "question", question: startedBody.question, attempt: active });
       return;
     }
 
     if (attempt.status === "active" && body.question && body.question.position) {
+      if (attempt.expires_at) {
+        setRemainingMs(new Date(attempt.expires_at).getTime() - (Date.now() + clockOffset.current));
+      }
       if (body.question.answered) {
         setPhase({ name: "stale", question: body.question, attempt });
         return;
@@ -126,6 +148,31 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
     // Finished, expired or abandoned: the result screen owns that story now.
     router.replace(`/results/${attemptId}`);
   }, [attemptId, router]);
+
+  useEffect(() => {
+    if (remainingMs === null) return;
+    if (remainingMs <= 0) return;
+
+    const startedAt = Date.now();
+    const initial = remainingMs;
+    const timer = setInterval(() => {
+      // Count down from the server deadline using elapsed monotonic time, so a
+      // system clock jump does not change what the player sees.
+      const elapsed = Date.now() - startedAt;
+      setRemainingMs(Math.max(0, initial - elapsed));
+    }, 250);
+
+    return () => clearInterval(timer);
+  }, [remainingMs === null]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (remainingMs !== 0) return;
+    if (phase.name !== "question" && phase.name !== "feedback" && phase.name !== "stale") return;
+    // Time is up: finalize what exists and show the result.
+    void fetch(`/api/attempts/${attemptId}/finish`, { method: "POST" }).finally(() => {
+      router.replace(`/results/${attemptId}`);
+    });
+  }, [remainingMs, phase.name, attemptId, router]);
 
   useEffect(() => {
     let active = true;
@@ -198,6 +245,10 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
       const body = await response.json().catch(() => null);
 
       if (!response.ok || !body) {
+        if (body?.error === "deadline_passed") {
+          router.replace(`/results/${attemptId}`);
+          return;
+        }
         setNotice(
           body?.error === "already_answered"
             ? "This question was already answered in another tab."
@@ -385,6 +436,11 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
           Quiz Atlas
         </Link>
         <div className="flex items-center gap-3">
+          {remainingMs !== null ? (
+            <Badge tone={remainingMs <= 10000 ? "warning" : "neutral"}>
+              {Math.ceil(remainingMs / 1000)}s left
+            </Badge>
+          ) : null}
           <Badge>{attempt.score} pts</Badge>
           <Button variant="quiet" size="sm" onClick={() => setConfirmExit(true)}>
             <LogOut className="size-4" aria-hidden="true" />
@@ -505,7 +561,12 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
 
         {answered ? (
           <>
-            <AutoAdvance delayMs={phase.feedback.explanation ? 6000 : 3500} onAdvance={next} />
+            <AutoAdvance
+              delayMs={
+                attempt.mode === "time_rush" ? 1200 : phase.feedback.explanation ? 6000 : 3500
+              }
+              onAdvance={next}
+            />
             <div
               className={cn(
                 "mt-5 rounded-[var(--radius-card)] border p-4",
@@ -538,7 +599,7 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
                   </>
                 )}
               </p>
-              {phase.feedback.explanation ? (
+              {phase.feedback.explanation && attempt.mode !== "time_rush" ? (
                 <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
                   {phase.feedback.explanation}
                 </p>

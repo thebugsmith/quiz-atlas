@@ -30,9 +30,9 @@ const modes: ModeOption[] = [
   {
     value: "time-rush",
     name: "Time Rush",
-    description: "Answer as many as you can before the timer runs out.",
+    description: "Answer as many as you can before the server-owned timer runs out.",
     Icon: Timer,
-    available: false,
+    available: true,
   },
   {
     value: "practice",
@@ -99,6 +99,8 @@ export function SetupShell({
   const [locked, setLocked] = useState(initialTopics.length > 0);
   const [difficulty, setDifficulty] = useState<DifficultyValue>(initialDifficulty);
   const [mode, setMode] = useState<ModeOption["value"]>("classic");
+  const [duration, setDuration] = useState<30 | 60 | 120>(60);
+  const timed = mode === "time-rush";
   const presetCount = questionCounts.find((value) => value === initialCount);
   const [count, setCount] = useState<(typeof questionCounts)[number]>(presetCount ?? 10);
   const [customCount, setCustomCount] = useState(
@@ -179,7 +181,8 @@ export function SetupShell({
   const effectiveCount = customCount ? Number(customCount) : count;
   const countValid =
     Number.isInteger(effectiveCount) && effectiveCount >= 5 && effectiveCount <= 50;
-  const enoughQuestions = countValid && available >= effectiveCount;
+  // Time Rush only needs a non-empty pool: the queue is whatever fits, capped at 200.
+  const enoughQuestions = timed ? available > 0 : countValid && available >= effectiveCount;
   const canStart = !starting && topics !== null && enoughQuestions;
 
   // Keep the URL shareable: the address bar always describes the current setup.
@@ -211,9 +214,11 @@ export function SetupShell({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          mode: timed ? "time_rush" : "classic",
           topics: allSelected ? (topics ?? []).map((topic) => topic.slug) : selected,
           difficulty,
           count: effectiveCount,
+          durationSeconds: timed ? duration : undefined,
           idempotencyKey: createKey.current,
         }),
       });
@@ -445,46 +450,71 @@ export function SetupShell({
 
             <section aria-labelledby="count-heading">
               <h2 id="count-heading" className="mb-3 text-lg font-semibold tracking-tight">
-                Questions
+                {timed ? "Time" : "Questions"}
               </h2>
-              <div className="flex flex-wrap items-center gap-2">
-                {questionCounts.map((value) => {
-                  const active = !customCount && count === value;
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => {
-                        setCount(value);
-                        setCustomCount("");
-                      }}
-                      aria-pressed={active}
-                      className={cn(
-                        "h-10 min-w-14 rounded-[var(--radius-control)] border px-3 text-sm font-medium transition-colors",
-                        active
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-surface text-muted-foreground hover:border-border-strong hover:text-foreground",
-                      )}
-                    >
-                      {value}
-                    </button>
-                  );
-                })}
-                <label className="text-muted-foreground flex items-center gap-2 text-sm">
-                  or
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min={5}
-                    max={50}
-                    value={customCount}
-                    onChange={(event) => setCustomCount(event.target.value)}
-                    placeholder="5–50"
-                    aria-label="Custom number of questions"
-                    className="border-border-strong bg-surface h-10 w-24 rounded-[var(--radius-control)] border px-3 text-sm"
-                  />
-                </label>
-              </div>
+              {timed ? (
+                <div className="flex flex-wrap gap-2">
+                  {([30, 60, 120] as const).map((seconds) => {
+                    const active = duration === seconds;
+                    return (
+                      <button
+                        key={seconds}
+                        type="button"
+                        onClick={() => setDuration(seconds)}
+                        aria-pressed={active}
+                        className={cn(
+                          "h-10 rounded-[var(--radius-control)] border px-4 text-sm font-medium transition-colors",
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-surface text-muted-foreground hover:border-border-strong hover:text-foreground",
+                        )}
+                      >
+                        {seconds}s
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+              {timed ? null : (
+                <div className="flex flex-wrap items-center gap-2">
+                  {questionCounts.map((value) => {
+                    const active = !customCount && count === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => {
+                          setCount(value);
+                          setCustomCount("");
+                        }}
+                        aria-pressed={active}
+                        className={cn(
+                          "h-10 min-w-14 rounded-[var(--radius-control)] border px-3 text-sm font-medium transition-colors",
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-surface text-muted-foreground hover:border-border-strong hover:text-foreground",
+                        )}
+                      >
+                        {value}
+                      </button>
+                    );
+                  })}
+                  <label className="text-muted-foreground flex items-center gap-2 text-sm">
+                    or
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={5}
+                      max={50}
+                      value={customCount}
+                      onChange={(event) => setCustomCount(event.target.value)}
+                      placeholder="5–50"
+                      aria-label="Custom number of questions"
+                      className="border-border-strong bg-surface h-10 w-24 rounded-[var(--radius-control)] border px-3 text-sm"
+                    />
+                  </label>
+                </div>
+              )}
             </section>
           </div>
         )}
@@ -516,10 +546,17 @@ export function SetupShell({
                 {modes.find((item) => item.value === mode)?.name ?? "Classic"}
               </dd>
             </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Questions</dt>
-              <dd className="font-medium">{countValid ? effectiveCount : "—"}</dd>
-            </div>
+            {timed ? (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Time</dt>
+                <dd className="font-medium">{duration}s</dd>
+              </div>
+            ) : (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Questions</dt>
+                <dd className="font-medium">{countValid ? effectiveCount : "—"}</dd>
+              </div>
+            )}
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Available</dt>
               <dd className="font-medium">{topics === null ? "…" : available}</dd>
@@ -569,7 +606,9 @@ export function SetupShell({
             {starting ? "Starting…" : "Start quiz"}
           </Button>
           <p className="text-muted-foreground mt-2 text-center text-xs">
-            {countValid ? effectiveCount : "—"} questions · {difficulty}
+            {timed
+              ? `${duration}s as fast as you can · ${difficulty}`
+              : `${countValid ? effectiveCount : "—"} questions · ${difficulty}`}
           </p>
           {quick ? (
             <p className="mt-3 text-center text-xs">
