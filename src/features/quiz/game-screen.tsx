@@ -123,8 +123,9 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
       return;
     }
 
-    setPhase({ name: "done", attempt });
-  }, [attemptId]);
+    // Finished, expired or abandoned: the result screen owns that story now.
+    router.replace(`/results/${attemptId}`);
+  }, [attemptId, router]);
 
   useEffect(() => {
     let active = true;
@@ -240,12 +241,7 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
       ) {
         // The server owns the counters; read the finished attempt back rather than
         // reporting numbers this screen assembled.
-        const finished = await fetch(`/api/attempts/${attemptId}`, { cache: "no-store" });
-        const finishedBody = await finished.json().catch(() => null);
-        setPhase({
-          name: "done",
-          attempt: finishedBody?.attempt ?? { ...phase.attempt, status: "completed" },
-        });
+        router.replace(`/results/${attemptId}`);
         return;
       }
 
