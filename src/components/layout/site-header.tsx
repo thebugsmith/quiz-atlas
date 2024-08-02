@@ -11,6 +11,8 @@ const navigation = [
   { href: "/", label: "Home" },
   { href: "/topics", label: "Topics" },
   { href: "/play", label: "Play" },
+  { href: "/bookmarks", label: "Bookmarks" },
+  { href: "/account", label: "Account" },
 ];
 
 export function SiteHeader() {

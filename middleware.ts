@@ -6,6 +6,16 @@ import { createServerClient } from "@supabase/ssr";
  * session would quietly expire and the player would lose their attempts.
  */
 export async function middleware(request: NextRequest) {
+  // Emailed links land on the site root with a PKCE code. Hand it to the callback
+  // route, which exchanges it server-side before any page renders.
+  const code = request.nextUrl.searchParams.get("code");
+  if (code) {
+    const callback = request.nextUrl.clone();
+    callback.pathname = "/auth/callback";
+    callback.search = `?code=${encodeURIComponent(code)}`;
+    return NextResponse.redirect(callback);
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
