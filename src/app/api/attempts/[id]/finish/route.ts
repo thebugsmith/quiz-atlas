@@ -21,5 +21,11 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     return mapDatabaseError(error) ?? gameJson({ error: "finish_failed" }, 500);
   }
 
-  return gameJson(data);
+  // Achievements are insert-only and keyed, so a second finish (or a retried request)
+  // awards nothing further.
+  const awarded = await rpc<{ awarded: string[] }>("game_award_achievements", {
+    p_owner: user.id,
+  });
+
+  return gameJson({ ...data, awarded: awarded.data?.awarded ?? [] });
 }
