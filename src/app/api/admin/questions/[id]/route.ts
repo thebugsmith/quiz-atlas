@@ -6,6 +6,11 @@ import { adminError, isDenied, requireAdmin } from "@/features/admin/guard";
 const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("publish") }),
   z.object({ action: z.literal("archive"), archived: z.boolean() }),
+  z.object({
+    action: z.literal("quarantine"),
+    quarantined: z.boolean(),
+    note: z.string().trim().max(1000).nullable().default(null),
+  }),
 ]);
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -42,6 +47,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (error || !data) {
       return (
         adminError(error ?? "") ?? NextResponse.json({ error: "publish_failed" }, { status: 500 })
+      );
+    }
+    return NextResponse.json(data);
+  }
+
+  if (parsed.data.action === "quarantine") {
+    const { data, error } = await rpc<Record<string, unknown>>("admin_quarantine_question", {
+      p_actor: actor.id,
+      p_question_id: id,
+      p_quarantine: parsed.data.quarantined,
+      p_note: parsed.data.note,
+    });
+    if (error || !data) {
+      return (
+        adminError(error ?? "") ??
+        NextResponse.json({ error: "quarantine_failed" }, { status: 500 })
       );
     }
     return NextResponse.json(data);

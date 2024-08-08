@@ -44,7 +44,7 @@ const field =
   "border-border bg-surface focus-visible:outline-primary w-full rounded-[var(--radius-control)] border px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2";
 
 export function AdminShell() {
-  const [tab, setTab] = useState<"questions" | "topics" | "import">("questions");
+  const [tab, setTab] = useState<"questions" | "reports" | "topics" | "import">("questions");
   const [inventory, setInventory] = useState<{
     topics: InventoryTopic[];
     low_inventory: string[];
@@ -110,6 +110,7 @@ export function AdminShell() {
         {(
           [
             { value: "questions", label: "Questions" },
+            { value: "reports", label: "Reports" },
             { value: "topics", label: "Topics" },
             { value: "import", label: "Import" },
           ] as const
@@ -138,6 +139,7 @@ export function AdminShell() {
       ) : null}
 
       {tab === "questions" ? <QuestionsTab topics={inventory.topics} /> : null}
+      {tab === "reports" ? <ReportsTab /> : null}
       {tab === "topics" ? (
         <TopicsTab topics={inventory.topics} onSaved={() => location.reload()} />
       ) : null}
@@ -367,6 +369,188 @@ function QuestionsTab({ topics }: { topics: InventoryTopic[] }) {
                   )}
                 </div>
               </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+type ReportRow = {
+  report_id: string;
+  reason: string;
+  details: string | null;
+  status: "open" | "resolved" | "dismissed";
+  created_at: string;
+  question_id: string;
+  question_version_id: string;
+  version_number: number;
+  prompt: string;
+  external_id: string;
+  topic_name: string;
+  quarantined: boolean;
+  archived: boolean;
+  resolution_note: string | null;
+  resolved_at: string | null;
+};
+
+function ReportsTab() {
+  const [status, setStatus] = useState("open");
+  const [rows, setRows] = useState<ReportRow[] | null>(null);
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const response = await fetch(`/api/admin/reports?status=${status}`, { cache: "no-store" });
+    if (response.ok) {
+      const body = await response.json();
+      setRows(body.reports ?? []);
+    }
+  }, [status]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch(`/api/admin/reports?status=${status}`, { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : { reports: [] }))
+      .then((body) => {
+        if (!cancelled) setRows(body.reports ?? []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [status]);
+
+  async function resolve(reportId: string, next: "resolved" | "dismissed") {
+    const response = await fetch(`/api/admin/reports/${reportId}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: next, note: notes[reportId] ?? null }),
+    });
+    setNotice(response.ok ? `Report ${next}.` : "Could not record that decision.");
+    if (response.ok) void load();
+  }
+
+  async function quarantine(questionId: string, quarantined: boolean) {
+    const response = await fetch(`/api/admin/questions/${questionId}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "quarantine", quarantined, note: "From the report queue" }),
+    });
+    setNotice(
+      response.ok
+        ? quarantined
+          ? "Quarantined — no new quiz will include it."
+          : "Released back into the pool."
+        : "Could not change quarantine.",
+    );
+    if (response.ok) void load();
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <select
+          aria-label="Filter reports by status"
+          className={field}
+          style={{ maxWidth: 200 }}
+          value={status}
+          onChange={(event) => setStatus(event.target.value)}
+        >
+          <option value="open">Open</option>
+          <option value="resolved">Resolved</option>
+          <option value="dismissed">Dismissed</option>
+          <option value="all">All</option>
+        </select>
+        {notice ? (
+          <p className="text-muted-foreground text-sm" role="status">
+            {notice}
+          </p>
+        ) : null}
+      </div>
+
+      <p className="text-muted-foreground text-sm">
+        Each report names the version the player saw. Resolving or dismissing records a note and an
+        audit entry; it never changes an answer, a score or a stored result. Quarantine only stops
+        the question being dealt to new quizzes.
+      </p>
+
+      {rows === null ? (
+        <p className="text-muted-foreground text-sm" role="status">
+          Loading reports…
+        </p>
+      ) : rows.length === 0 ? (
+        <p className="text-muted-foreground text-sm">Nothing here.</p>
+      ) : (
+        <ul className="space-y-2">
+          {rows.map((row) => (
+            <li
+              key={row.report_id}
+              className="border-border bg-surface rounded-[var(--radius-card)] border p-3"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge
+                  tone={
+                    row.status === "open"
+                      ? "warning"
+                      : row.status === "resolved"
+                        ? "success"
+                        : "neutral"
+                  }
+                >
+                  {row.status}
+                </Badge>
+                <span className="text-muted-foreground text-xs">
+                  {row.reason.replace(/_/g, " ")} · {row.topic_name} · v{row.version_number} ·{" "}
+                  {new Date(row.created_at).toLocaleString()}
+                </span>
+                {row.quarantined ? <Badge tone="neutral">quarantined</Badge> : null}
+              </div>
+              <p className="mt-1.5 text-sm break-words">{row.prompt}</p>
+              <p className="text-muted-foreground mt-0.5 text-xs">{row.external_id}</p>
+              {row.details ? (
+                <p className="bg-surface-muted mt-2 rounded p-2 text-sm">{row.details}</p>
+              ) : null}
+              {row.resolution_note ? (
+                <p className="text-muted-foreground mt-2 text-xs">Note: {row.resolution_note}</p>
+              ) : null}
+
+              {row.status === "open" ? (
+                <div className="mt-2 space-y-2">
+                  <input
+                    aria-label={`Resolution note for ${row.external_id}`}
+                    className={field}
+                    placeholder="Resolution note (optional)"
+                    value={notes[row.report_id] ?? ""}
+                    onChange={(event) =>
+                      setNotes((current) => ({ ...current, [row.report_id]: event.target.value }))
+                    }
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => resolve(row.report_id, "resolved")}
+                    >
+                      Resolve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="quiet"
+                      onClick={() => resolve(row.report_id, "dismissed")}
+                    >
+                      Dismiss
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="quiet"
+                      onClick={() => quarantine(row.question_id, !row.quarantined)}
+                    >
+                      {row.quarantined ? "Release" : "Quarantine"}
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>

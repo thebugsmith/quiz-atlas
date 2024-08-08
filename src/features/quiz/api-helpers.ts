@@ -43,6 +43,16 @@ export function mapDatabaseError(message: string) {
       return gameJson({ error: "invalid_count" }, 400);
     case "already_answered":
       return gameJson({ error: "already_answered" }, 409);
+    case "too_many_reports":
+      return gameJson({ error: "too_many_reports" }, 429);
+    case "already_reported":
+      return gameJson({ error: "already_reported" }, 409);
+    case "invalid_reason":
+    case "details_too_long":
+      return gameJson({ error: "invalid_request" }, 400);
+    case "already_handled":
+    case "already_voided":
+      return gameJson({ error: message }, 409);
     case "reveal_not_allowed":
       return gameJson({ error: "reveal_not_allowed" }, 403);
     case "invalid_source":

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Bookmark, Check, Compass, Eye, LogOut, X } from "lucide-react";
+import { ReportQuestion } from "@/features/quiz/report-question";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -14,6 +15,7 @@ type Question = {
   position: number | null;
   total: number;
   question_id?: string;
+  question_version_id?: string;
   bookmarked?: boolean;
   type: "mcq" | "comprehension";
   stem: string | null;
@@ -649,6 +651,10 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
           <p className="text-danger mt-4 text-sm" role="alert">
             {notice}
           </p>
+        ) : null}
+
+        {question.question_version_id ? (
+          <ReportQuestion questionVersionId={question.question_version_id} attemptId={attempt.id} />
         ) : null}
       </article>
 

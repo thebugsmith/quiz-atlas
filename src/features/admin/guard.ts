@@ -50,7 +50,12 @@ export function adminError(message: string) {
   ) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
-  if (message === "question_archived" || message === "nothing_to_publish") {
+  if (
+    message === "question_archived" ||
+    message === "nothing_to_publish" ||
+    message === "already_handled" ||
+    message === "already_voided"
+  ) {
     return NextResponse.json({ error: message }, { status: 409 });
   }
   return null;
