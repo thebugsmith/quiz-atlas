@@ -16,6 +16,12 @@ export default function DailyPage() {
           Everyone answers the same ten questions in the same order. One ranked attempt per account;
           details stay hidden until the day closes.
         </p>
+        <a
+          href="/daily/leaderboard"
+          className="text-primary mt-2 inline-block text-sm font-medium underline-offset-4 hover:underline"
+        >
+          See the daily leaderboard
+        </a>
       </header>
       <DailyShell />
     </Container>
