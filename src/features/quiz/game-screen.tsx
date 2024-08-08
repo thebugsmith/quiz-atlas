@@ -27,7 +27,7 @@ type Question = {
 
 type Attempt = {
   id: string;
-  mode: "classic" | "time_rush" | "practice";
+  mode: "classic" | "time_rush" | "practice" | "daily";
   status: "ready" | "active" | "completed" | "expired" | "abandoned";
   expires_at?: string | null;
   score: number;
@@ -478,7 +478,7 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
               </span>
             </Button>
           ) : null}
-          <Badge>{attempt.score} pts</Badge>
+          {attempt.mode === "daily" ? null : <Badge>{attempt.score} pts</Badge>}
           <Button variant="quiet" size="sm" onClick={() => setConfirmExit(true)}>
             <LogOut className="size-4" aria-hidden="true" />
             Exit
@@ -533,9 +533,11 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
           <ul className="space-y-2">
             {question.options.map((option, index) => {
               const isSelected = selected === option.id;
-              const isCorrect = answered && phase.feedback.correct_option_id === option.id;
+              // Daily withholds the key, so nothing is marked right or wrong here.
+              const revealed = answered && attempt.mode !== "daily";
+              const isCorrect = revealed && phase.feedback.correct_option_id === option.id;
               const isWrongPick =
-                answered &&
+                revealed &&
                 phase.feedback.action === "answer" &&
                 selected === option.id &&
                 !isCorrect;
@@ -600,23 +602,33 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
           <>
             <AutoAdvance
               delayMs={
-                attempt.mode === "time_rush" ? 1200 : phase.feedback.explanation ? 6000 : 3500
+                attempt.mode === "daily"
+                  ? 900
+                  : attempt.mode === "time_rush"
+                    ? 1200
+                    : phase.feedback.explanation
+                      ? 6000
+                      : 3500
               }
               onAdvance={next}
             />
             <div
               className={cn(
                 "mt-5 rounded-[var(--radius-card)] border p-4",
-                phase.feedback.action === "skip" || phase.feedback.action === "reveal"
+                attempt.mode === "daily"
                   ? "border-border bg-surface-muted"
-                  : phase.feedback.is_correct
-                    ? "border-success/50 bg-success-soft"
-                    : "border-danger/50 bg-danger-soft",
+                  : phase.feedback.action === "skip" || phase.feedback.action === "reveal"
+                    ? "border-border bg-surface-muted"
+                    : phase.feedback.is_correct
+                      ? "border-success/50 bg-success-soft"
+                      : "border-danger/50 bg-danger-soft",
               )}
               role="status"
             >
               <p className="flex items-center gap-2 text-sm font-semibold">
-                {phase.feedback.action === "reveal" ? (
+                {attempt.mode === "daily" ? (
+                  "Answer saved"
+                ) : phase.feedback.action === "reveal" ? (
                   "Answer revealed — no points"
                 ) : phase.feedback.action === "skip" ? (
                   "Skipped — no points"
@@ -638,6 +650,11 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
                   </>
                 )}
               </p>
+              {attempt.mode === "daily" ? (
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Correct answers and explanations unlock when today&rsquo;s challenge closes.
+                </p>
+              ) : null}
               {phase.feedback.explanation && attempt.mode !== "time_rush" ? (
                 <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
                   {phase.feedback.explanation}

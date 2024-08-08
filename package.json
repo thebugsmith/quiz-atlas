@@ -21,7 +21,8 @@
     "db:types": "supabase gen types typescript --local --schema public,content > src/lib/supabase/database.types.ts",
     "content:import": "tsx scripts/import-questions.ts",
     "content:convert": "tsx scripts/convert-source.ts",
-    "admin:grant": "tsx scripts/make-admin.ts"
+    "admin:grant": "tsx scripts/make-admin.ts",
+    "daily:prepare": "tsx scripts/prepare-daily.ts"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

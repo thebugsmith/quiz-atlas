@@ -52,6 +52,7 @@ export function mapDatabaseError(message: string) {
       return gameJson({ error: "invalid_request" }, 400);
     case "already_handled":
     case "already_voided":
+    case "already_played":
       return gameJson({ error: message }, 409);
     case "reveal_not_allowed":
       return gameJson({ error: "reveal_not_allowed" }, 403);

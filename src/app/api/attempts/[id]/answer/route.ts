@@ -6,6 +6,7 @@ import {
   rpc,
   unauthenticated,
 } from "@/features/quiz/api-helpers";
+import { getServiceClient } from "@/server/supabase";
 
 /**
  * Accepts exactly one action per question — an answer or a skip. A retry with the
@@ -24,7 +25,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const { id } = await params;
-  const { data, error } = await rpc<Record<string, unknown>>("game_submit_answer", {
+
+  // A daily attempt acknowledges the submission and nothing else until the window
+  // closes: no correctness, no correct option, no explanation, no running score.
+  const attempt = await getServiceClient()
+    .from("attempts")
+    .select("mode")
+    .eq("id", id)
+    .eq("owner_id", user.id)
+    .maybeSingle();
+
+  const fn = attempt.data?.mode === "daily" ? "game_submit_daily_answer" : "game_submit_answer";
+
+  const { data, error } = await rpc<Record<string, unknown>>(fn, {
     p_attempt_id: id,
     p_owner: user.id,
     p_position: parsed.data.position,
