@@ -44,9 +44,9 @@ const modes: ModeOption[] = [
   {
     value: "survival",
     name: "Survival",
-    description: "Three lives. One wrong answer costs a life.",
+    description: "Three lives. A wrong answer or a skip costs one; run until they are gone.",
     Icon: Trophy,
-    available: false,
+    available: true,
   },
 ];
 
@@ -107,6 +107,7 @@ export function SetupShell({
   const [source, setSource] = useState<"topics" | "bookmarks" | "missed">(initialSource);
   const timed = mode === "time-rush";
   const practising = mode === "practice";
+  const surviving = mode === "survival";
   const presetCount = questionCounts.find((value) => value === initialCount);
   const [count, setCount] = useState<(typeof questionCounts)[number]>(presetCount ?? 10);
   const [customCount, setCustomCount] = useState(
@@ -190,7 +191,7 @@ export function SetupShell({
   // Practice and Time Rush only need a non-empty pool; the server reports the real
   // availability for bookmarks and missed questions when the attempt is created.
   const enoughQuestions =
-    timed || practising ? available > 0 : countValid && available >= effectiveCount;
+    timed || practising || surviving ? available > 0 : countValid && available >= effectiveCount;
   const canStart = !starting && topics !== null && enoughQuestions;
 
   // Keep the URL shareable: the address bar always describes the current setup.
@@ -224,7 +225,7 @@ export function SetupShell({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          mode: timed ? "time_rush" : practising ? "practice" : "classic",
+          mode: timed ? "time_rush" : practising ? "practice" : surviving ? "survival" : "classic",
           source: practising ? source : "topics",
           topics: allSelected ? (topics ?? []).map((topic) => topic.slug) : selected,
           difficulty,
@@ -496,8 +497,14 @@ export function SetupShell({
 
             <section aria-labelledby="count-heading">
               <h2 id="count-heading" className="mb-3 text-lg font-semibold tracking-tight">
-                {timed ? "Time" : "Questions"}
+                {timed ? "Time" : surviving ? "Lives" : "Questions"}
               </h2>
+              {surviving ? (
+                <p className="text-muted-foreground text-sm">
+                  Three lives. A wrong answer or a skip costs one; the run ends when they are gone
+                  or the pool runs out.
+                </p>
+              ) : null}
               {timed ? (
                 <div className="flex flex-wrap gap-2">
                   {([30, 60, 120] as const).map((seconds) => {
@@ -521,7 +528,7 @@ export function SetupShell({
                   })}
                 </div>
               ) : null}
-              {timed ? null : (
+              {timed || surviving ? null : (
                 <div className="flex flex-wrap items-center gap-2">
                   {questionCounts.map((value) => {
                     const active = !customCount && count === value;
@@ -597,6 +604,11 @@ export function SetupShell({
                 <dt className="text-muted-foreground">Time</dt>
                 <dd className="font-medium">{duration}s</dd>
               </div>
+            ) : surviving ? (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Lives</dt>
+                <dd className="font-medium">3</dd>
+              </div>
             ) : (
               <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Questions</dt>
@@ -654,7 +666,9 @@ export function SetupShell({
           <p className="text-muted-foreground mt-2 text-center text-xs">
             {timed
               ? `${duration}s as fast as you can · ${difficulty}`
-              : `${countValid ? effectiveCount : "—"} questions · ${difficulty}`}
+              : surviving
+                ? `three lives · ${difficulty}`
+                : `${countValid ? effectiveCount : "—"} questions · ${difficulty}`}
           </p>
           {quick ? (
             <p className="mt-3 text-center text-xs">

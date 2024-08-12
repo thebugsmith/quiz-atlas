@@ -35,7 +35,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     .eq("owner_id", user.id)
     .maybeSingle();
 
-  const fn = attempt.data?.mode === "daily" ? "game_submit_daily_answer" : "game_submit_answer";
+  const fn =
+    attempt.data?.mode === "daily"
+      ? "game_submit_daily_answer"
+      : attempt.data?.mode === "survival"
+        ? "game_submit_survival_answer"
+        : "game_submit_answer";
 
   const { data, error } = await rpc<Record<string, unknown>>(fn, {
     p_attempt_id: id,

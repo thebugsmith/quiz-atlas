@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const createAttemptSchema = z
   .object({
-    mode: z.enum(["classic", "time_rush", "practice"]).default("classic"),
+    mode: z.enum(["classic", "time_rush", "practice", "survival"]).default("classic"),
     source: z.enum(["topics", "bookmarks", "missed"]).default("topics"),
     topics: z.array(z.string().min(1)).min(1, "choose at least one topic").max(8),
     difficulty: z.enum(["easy", "medium", "hard", "mixed"]),

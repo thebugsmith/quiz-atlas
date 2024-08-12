@@ -164,13 +164,19 @@ export function ResultsScreen({ attemptId }: { attemptId: string }) {
               ? "Quiz ended early"
               : attempt.mode === "time_rush"
                 ? "Time's up"
-                : "Quiz complete"}
+                : attempt.mode === "survival" && attempt.answered_count < attempt.question_count
+                  ? "Out of lives"
+                  : "Quiz complete"}
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
           {attempt.mode === "time_rush"
             ? `${attempt.answered_count} answered · ${attempt.correct_count} correct · ${attempt.wrong_count} wrong`
             : `${attempt.correct_count} of ${attempt.question_count} correct · ${
-                attempt.status === "abandoned" ? "ended before the last question" : "full attempt"
+                attempt.status === "abandoned"
+                  ? "ended before the last question"
+                  : attempt.mode === "survival" && attempt.answered_count < attempt.question_count
+                    ? "ended with no lives left"
+                    : "full attempt"
               }`}
         </p>
       </header>

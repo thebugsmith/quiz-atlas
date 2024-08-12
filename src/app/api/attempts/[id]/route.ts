@@ -30,7 +30,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const { data: attempt, error } = await getServiceClient()
     .from("attempts")
     .select(
-      "id, mode, status, score, question_count, current_position, correct_count, wrong_count, skipped_count, started_at, expires_at, finished_at",
+      "id, mode, status, score, question_count, current_position, correct_count, wrong_count, skipped_count, lives, started_at, expires_at, finished_at",
     )
     .eq("id", id)
     .eq("owner_id", user.id)

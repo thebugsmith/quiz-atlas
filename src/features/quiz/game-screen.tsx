@@ -27,7 +27,8 @@ type Question = {
 
 type Attempt = {
   id: string;
-  mode: "classic" | "time_rush" | "practice" | "daily";
+  mode: "classic" | "time_rush" | "practice" | "daily" | "survival";
+  lives?: number | null;
   status: "ready" | "active" | "completed" | "expired" | "abandoned";
   expires_at?: string | null;
   score: number;
@@ -266,8 +267,17 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
         name: "feedback",
         question: phase.question,
         feedback: body,
-        attempt: { ...phase.attempt, score: body.score },
+        attempt: {
+          ...phase.attempt,
+          score: body.score ?? phase.attempt.score,
+          lives: body.lives_left ?? phase.attempt.lives,
+        },
       });
+
+      // Survival ends on the last life: show the outcome, then the result.
+      if (body.finished || body.lives_left === 0) {
+        window.setTimeout(() => router.replace(`/results/${attemptId}`), 1400);
+      }
     } catch {
       setNotice("Could not reach the server. Your answer was not submitted.");
     } finally {
@@ -477,6 +487,12 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
                 {question.bookmarked ? "Remove bookmark" : "Bookmark this question"}
               </span>
             </Button>
+          ) : null}
+          {attempt.mode === "survival" ? (
+            <Badge tone={Number(attempt.lives ?? 0) <= 1 ? "warning" : "neutral"}>
+              {typeof attempt.lives === "number" ? attempt.lives : 3} live
+              {attempt.lives === 1 ? "" : "s"}
+            </Badge>
           ) : null}
           {attempt.mode === "daily" ? null : <Badge>{attempt.score} pts</Badge>}
           <Button variant="quiet" size="sm" onClick={() => setConfirmExit(true)}>
