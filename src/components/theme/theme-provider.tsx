@@ -100,13 +100,19 @@ export function useTheme(): ThemeContextValue {
   return context;
 }
 
-/** Runs before paint to avoid a flash of the wrong palette. */
+/**
+ * Runs before paint: no flash of the wrong palette, and a reduced-motion choice is in
+ * place before the first transition could run.
+ */
 export const themeInitScript = `(() => {
   try {
     const stored = localStorage.getItem("${STORAGE_KEY}");
     const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     document.documentElement.dataset.theme =
       stored === "light" || stored === "dark" ? stored : system;
+    if (localStorage.getItem("quiz-atlas-motion") === "reduce") {
+      document.documentElement.setAttribute("data-motion", "reduce");
+    }
   } catch {
     document.documentElement.dataset.theme = "light";
   }

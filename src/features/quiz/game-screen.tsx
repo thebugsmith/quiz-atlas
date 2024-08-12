@@ -1,10 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Bookmark, Check, Compass, Eye, LogOut, X } from "lucide-react";
 import { ReportQuestion } from "@/features/quiz/report-question";
+import { playCorrect, playWrong } from "@/components/a11y/sound";
+import {
+  getSoundServerSnapshot,
+  getSoundSnapshot,
+  setSoundEnabled,
+  subscribeSound,
+} from "@/components/a11y/preferences";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -91,6 +98,14 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
   // whether an answer was in time. The browser clock is used for display only.
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const clockOffset = useRef(0);
+  // Screen readers get thresholds, not a per-second tick.
+  const lastThreshold = useRef<number | null>(null);
+  const soundOn = useSyncExternalStore(subscribeSound, getSoundSnapshot, getSoundServerSnapshot);
+  const promptRef = useRef<HTMLHeadingElement | null>(null);
+  const liveRef = useRef<HTMLParagraphElement | null>(null);
+  const submitRef = useRef<(action: "answer" | "skip" | "reveal", optionId?: number) => void>(
+    () => {},
+  );
   // Idempotency key per question. It is derived rather than random, so a retry after
   // a reload still names the same submission and the server can replay the outcome
   // instead of scoring the answer twice.
@@ -274,6 +289,11 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
         },
       });
 
+      if (soundOn && body.action === "answer") {
+        if (body.is_correct) playCorrect();
+        else playWrong();
+      }
+
       // Survival ends on the last life: show the outcome, then the result.
       if (body.finished || body.lives_left === 0) {
         window.setTimeout(() => router.replace(`/results/${attemptId}`), 1400);
@@ -284,6 +304,58 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
       setPending(false);
     }
   }
+
+  // Announce the time only at thresholds, never every second.
+  useEffect(() => {
+    if (remainingMs === null || !liveRef.current) return;
+    const seconds = Math.ceil(remainingMs / 1000);
+    const threshold = seconds <= 10 ? 10 : seconds <= 30 ? 30 : null;
+    if (threshold !== null && lastThreshold.current !== threshold) {
+      lastThreshold.current = threshold;
+      liveRef.current.textContent = `${threshold} seconds left`;
+    }
+    if (seconds === 0) liveRef.current.textContent = "Time is up";
+  }, [remainingMs]);
+
+  // Keyboard play: 1–4 answer the question, ignored while typing in a field.
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target?.isContentEditable) {
+        return;
+      }
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (phase.name !== "question") return;
+
+      const digit = Number(event.key);
+      if (!Number.isInteger(digit) || digit < 1 || digit > 4) return;
+      const option = phase.question.options[digit - 1];
+      if (!option) return;
+
+      event.preventDefault();
+      setSelected(option.id);
+      submitRef.current("answer", option.id);
+    }
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phase]);
+
+  useEffect(() => {
+    submitRef.current = submit;
+  });
+
+  // A new question takes focus, so the next prompt is read out rather than the old one.
+  const currentPosition = phase.name === "question" ? phase.question.position : null;
+  useEffect(() => {
+    if (currentPosition === null) return;
+    promptRef.current?.focus();
+    // A new question starts a fresh announcement cycle; clearing the text keeps the
+    // live region silent until the next threshold is crossed.
+    lastThreshold.current = null;
+    if (liveRef.current) liveRef.current.textContent = "";
+  }, [currentPosition]);
 
   async function toggleBookmark() {
     if (phase.name !== "question" || !phase.question.question_id) return;
@@ -467,9 +539,11 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
         </Link>
         <div className="flex items-center gap-3">
           {remainingMs !== null ? (
-            <Badge tone={remainingMs <= 10000 ? "warning" : "neutral"}>
-              {Math.ceil(remainingMs / 1000)}s left
-            </Badge>
+            <span aria-hidden="true">
+              <Badge tone={remainingMs <= 10000 ? "warning" : "neutral"}>
+                {Math.ceil(remainingMs / 1000)}s left
+              </Badge>
+            </span>
           ) : null}
           {question.question_id ? (
             <Button
@@ -495,6 +569,18 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
             </Badge>
           ) : null}
           {attempt.mode === "daily" ? null : <Badge>{attempt.score} pts</Badge>}
+          <Button
+            variant="quiet"
+            size="sm"
+            aria-pressed={soundOn}
+            onClick={() => setSoundEnabled(!soundOn)}
+            title={soundOn ? "Sound on" : "Sound off"}
+          >
+            <span aria-hidden="true">{soundOn ? "♪" : "♪̸"}</span>
+            <span className="sr-only">
+              {soundOn ? "Turn answer sounds off" : "Turn answer sounds on"}
+            </span>
+          </Button>
           <Button variant="quiet" size="sm" onClick={() => setConfirmExit(true)}>
             <LogOut className="size-4" aria-hidden="true" />
             Exit
@@ -540,9 +626,14 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
           </ol>
         ) : null}
 
-        <h1 className="text-[22px] leading-snug font-semibold tracking-tight sm:text-[26px]">
+        <h1
+          ref={promptRef}
+          tabIndex={-1}
+          className="text-[22px] leading-snug font-semibold tracking-tight outline-none sm:text-[26px]"
+        >
           {question.prompt}
         </h1>
+        <p ref={liveRef} aria-live="polite" className="sr-only" />
 
         <fieldset className="mt-6" disabled={pending || answered}>
           <legend className="sr-only">Choose one answer</legend>
@@ -691,7 +782,7 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
         ) : null}
       </article>
 
-      <div className="border-border bg-background/95 fixed inset-x-0 bottom-0 border-t p-4 backdrop-blur sm:static sm:mt-6 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+      <div className="border-border bg-background/95 fixed inset-x-0 bottom-0 border-t p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mt-6 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
         {answered ? (
           <Button className="w-full sm:w-auto" size="lg" onClick={next} disabled={pending}>
             {pending ? "Loading…" : "Next now"}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Clock3, SkipForward, X } from "lucide-react";
@@ -54,9 +54,14 @@ const letter = (index: number) => String.fromCharCode(65 + index);
 
 export function ResultsScreen({ attemptId }: { attemptId: string }) {
   const router = useRouter();
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
   const [data, setData] = useState<ResultPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [replaying, setReplaying] = useState(false);
+
+  useEffect(() => {
+    if (data) headingRef.current?.focus();
+  }, [data]);
 
   useEffect(() => {
     let cancelled = false;
@@ -157,7 +162,11 @@ export function ResultsScreen({ attemptId }: { attemptId: string }) {
         <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
           {attempt.mode.replace("_", " ")} · rules v{attempt.rules_version}
         </p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
+        <h1
+          ref={headingRef}
+          tabIndex={-1}
+          className="mt-1 text-2xl font-semibold tracking-tight outline-none sm:text-3xl"
+        >
           {attempt.status === "expired"
             ? "This quiz expired"
             : attempt.status === "abandoned"

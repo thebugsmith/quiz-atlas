@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Compass } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { MotionToggle } from "@/components/a11y/motion-toggle";
 import { Container } from "@/components/ui/container";
 import { cn } from "@/lib/cn";
 
@@ -53,7 +54,10 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <ThemeToggle />
+        <div className="flex items-center gap-1">
+          <MotionToggle />
+          <ThemeToggle />
+        </div>
       </Container>
     </header>
   );
