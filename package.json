@@ -24,7 +24,8 @@
     "admin:grant": "tsx scripts/make-admin.ts",
     "daily:prepare": "tsx scripts/prepare-daily.ts",
     "content:report": "tsx scripts/content-report.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "guests:cleanup": "tsx scripts/cleanup-guests.ts"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

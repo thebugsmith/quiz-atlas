@@ -7,12 +7,12 @@ import {
   unauthenticated,
 } from "@/features/quiz/api-helpers";
 import { getServiceClient } from "@/server/supabase";
+import { consume, LIMITS } from "@/features/ops/limits";
+import { logApi } from "@/features/ops/log";
 
-/**
- * Accepts exactly one action per question — an answer or a skip. A retry with the
- * same idempotency key returns the stored outcome instead of scoring twice.
- */
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+const ROUTE = "POST /api/attempts/[id]/answer";
+
+async function handle(request: Request, params: Promise<{ id: string }>): Promise<Response> {
   const user = await requireUser();
   if (!user) return unauthenticated();
 
@@ -22,6 +22,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       { error: "invalid_request", issues: parsed.error.issues.map((issue) => issue.message) },
       400,
     );
+  }
+
+  const budget = await consume(`answer:${user.id}`, LIMITS.answer.limit, LIMITS.answer.window);
+  if (!budget.allowed) {
+    return gameJson({ error: "rate_limited", resetAt: budget.resetAt }, 429);
   }
 
   const { id } = await params;
@@ -56,4 +61,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   return gameJson(data);
+}
+
+/**
+ * Accepts exactly one action per question — an answer or a skip. A retry with the
+ * same idempotency key returns the stored outcome instead of scoring twice.
+ */
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const started = Date.now();
+  const response = await handle(request, params);
+  logApi({
+    route: ROUTE,
+    method: "POST",
+    status: response.status,
+    durationMs: Date.now() - started,
+    requestId: request.headers.get("x-request-id") ?? undefined,
+    outcome: response.ok ? "ok" : response.status === 429 ? "rate_limited" : "rejected",
+  });
+  return response;
 }

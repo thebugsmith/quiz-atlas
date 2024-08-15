@@ -4,6 +4,8 @@ import { rpc } from "@/features/quiz/api-helpers";
 import { adminError, isDenied, requireAdmin } from "@/features/admin/guard";
 import { csvRowToQuestion, parseCsv } from "@/features/admin/csv";
 import { importQuestionSchema } from "@/features/questions/schema";
+import { consume, LIMITS } from "@/features/ops/limits";
+import { logApi } from "@/features/ops/log";
 import { questionFingerprint } from "@/features/questions/fingerprint";
 
 const bodySchema = z.object({
@@ -25,8 +27,26 @@ export type ImportOutcome = {
  * reports every row without writing anything.
  */
 export async function POST(request: Request) {
+  const started = Date.now();
+  const response = await run(request);
+  logApi({
+    route: "POST /api/admin/import",
+    method: "POST",
+    status: response.status,
+    durationMs: Date.now() - started,
+    outcome: response.ok ? "ok" : "rejected",
+  });
+  return response;
+}
+
+async function run(request: Request) {
   const actor = await requireAdmin();
   if (isDenied(actor)) return actor;
+
+  const budget = await consume(`import:${actor.id}`, LIMITS.import.limit, LIMITS.import.window);
+  if (!budget.allowed) {
+    return NextResponse.json({ error: "rate_limited", resetAt: budget.resetAt }, { status: 429 });
+  }
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });

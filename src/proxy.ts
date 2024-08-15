@@ -1,11 +1,40 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
 /**
- * Keeps the auth cookie fresh on every navigation. Without this, an anonymous
- * session would quietly expire and the player would lose their attempts.
+ * Two jobs run here: refuse cross-site writes (a cookie-authenticated POST from another
+ * origin), and keep the auth cookie fresh so an anonymous session does not quietly
+ * expire and take the player's attempts with it.
+ *
+ * Cookie-authenticated mutations must come from this site. Browsers send Origin on
+ * cross-site writes; a request that carries a foreign one is refused before routing.
+ * Same-site fetches without an Origin header (some proxies strip it) are allowed when
+ * Sec-Fetch-Site says so.
  */
-export async function middleware(request: NextRequest) {
+function isForeignWrite(request: NextRequest) {
+  if (!MUTATING.has(request.method)) return false;
+  if (!request.nextUrl.pathname.startsWith("/api/")) return false;
+
+  const origin = request.headers.get("origin");
+  const site = request.headers.get("sec-fetch-site");
+
+  if (origin) {
+    try {
+      return new URL(origin).host !== request.nextUrl.host;
+    } catch {
+      return true;
+    }
+  }
+  return site === "cross-site";
+}
+
+export async function proxy(request: NextRequest) {
+  if (isForeignWrite(request)) {
+    return NextResponse.json({ error: "cross_origin" }, { status: 403 });
+  }
+
   // Emailed links land on the site root with a PKCE code. Hand it to the callback
   // route, which exchanges it server-side before any page renders.
   const code = request.nextUrl.searchParams.get("code");

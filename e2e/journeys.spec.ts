@@ -148,6 +148,27 @@ test("admin endpoints refuse anonymous and guest callers", async ({ page, reques
   expect(asGuest.status()).toBe(403);
 });
 
+test("a write from another origin is refused before routing", async ({ request }) => {
+  const cross = await request.post("/api/attempts", {
+    headers: { origin: "https://evil.example" },
+    data: {},
+  });
+  expect(cross.status()).toBe(403);
+  expect((await cross.json()).error).toBe("cross_origin");
+});
+
+test("health reports the database, content and today's daily set", async ({ request }) => {
+  const health = await request.get("/api/health");
+  expect(health.status()).toBe(200);
+  const body = await health.json();
+  expect(body.ok).toBe(true);
+  expect(body.checks.map((check: { name: string }) => check.name)).toEqual([
+    "database",
+    "content_available",
+    "daily_prepared",
+  ]);
+});
+
 test("an editor can save an unchanged question and publish stays a no-op", async ({ page }) => {
   test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "E2E_ADMIN_EMAIL/PASSWORD not set");
 

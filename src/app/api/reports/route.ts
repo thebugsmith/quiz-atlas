@@ -6,6 +6,7 @@ import {
   rpc,
   unauthenticated,
 } from "@/features/quiz/api-helpers";
+import { consume, LIMITS } from "@/features/ops/limits";
 
 const reportSchema = z.object({
   questionVersionId: z.string().uuid(),
@@ -22,6 +23,11 @@ export async function POST(request: Request) {
   const parsed = reportSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return gameJson({ error: "invalid_request" }, 400);
+  }
+
+  const budget = await consume(`report:${user.id}`, LIMITS.report.limit, LIMITS.report.window);
+  if (!budget.allowed) {
+    return gameJson({ error: "too_many_reports", resetAt: budget.resetAt }, 429);
   }
 
   const input = parsed.data;

@@ -93,6 +93,7 @@ export type Database = {
           current_version_id: string | null;
           external_id: string;
           id: string;
+          quarantined_at: string | null;
           updated_at: string;
         };
         ComputedFields: never;
@@ -102,6 +103,7 @@ export type Database = {
           current_version_id?: string | null;
           external_id: string;
           id?: string;
+          quarantined_at?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -110,6 +112,7 @@ export type Database = {
           current_version_id?: string | null;
           external_id?: string;
           id?: string;
+          quarantined_at?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -212,6 +215,68 @@ export type Database = {
   };
   public: {
     Tables: {
+      account_merges: {
+        Row: {
+          attempts_moved: number;
+          bookmarks_moved: number;
+          created_at: string;
+          daily_attempts_dropped: number;
+          guest_id: string;
+          id: string;
+          target_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          attempts_moved?: number;
+          bookmarks_moved?: number;
+          created_at?: string;
+          daily_attempts_dropped?: number;
+          guest_id: string;
+          id?: string;
+          target_id: string;
+        };
+        Update: {
+          attempts_moved?: number;
+          bookmarks_moved?: number;
+          created_at?: string;
+          daily_attempts_dropped?: number;
+          guest_id?: string;
+          id?: string;
+          target_id?: string;
+        };
+        Relationships: [];
+      };
+      admin_audit: {
+        Row: {
+          action: string;
+          actor_id: string | null;
+          created_at: string;
+          detail: NonNullable<Json>;
+          entity: string;
+          entity_id: string | null;
+          id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          action: string;
+          actor_id?: string | null;
+          created_at?: string;
+          detail?: NonNullable<Json>;
+          entity: string;
+          entity_id?: string | null;
+          id?: string;
+        };
+        Update: {
+          action?: string;
+          actor_id?: string | null;
+          created_at?: string;
+          detail?: NonNullable<Json>;
+          entity?: string;
+          entity_id?: string | null;
+          id?: string;
+        };
+        Relationships: [];
+      };
       admin_users: {
         Row: {
           granted_at: string;
@@ -345,6 +410,8 @@ export type Database = {
           skipped_count: number;
           started_at: string | null;
           status: Database["public"]["Enums"]["attempt_status"];
+          void_reason: string | null;
+          voided_at: string | null;
           wrong_count: number;
         };
         ComputedFields: never;
@@ -367,6 +434,8 @@ export type Database = {
           skipped_count?: number;
           started_at?: string | null;
           status?: Database["public"]["Enums"]["attempt_status"];
+          void_reason?: string | null;
+          voided_at?: string | null;
           wrong_count?: number;
         };
         Update: {
@@ -388,7 +457,98 @@ export type Database = {
           skipped_count?: number;
           started_at?: string | null;
           status?: Database["public"]["Enums"]["attempt_status"];
+          void_reason?: string | null;
+          voided_at?: string | null;
           wrong_count?: number;
+        };
+        Relationships: [];
+      };
+      bookmarks: {
+        Row: {
+          created_at: string;
+          owner_id: string;
+          question_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          owner_id: string;
+          question_id: string;
+        };
+        Update: {
+          created_at?: string;
+          owner_id?: string;
+          question_id?: string;
+        };
+        Relationships: [];
+      };
+      daily_challenge_questions: {
+        Row: {
+          challenge_id: string;
+          option_order: NonNullable<Json>;
+          position: number;
+          question_id: string;
+          question_version_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          challenge_id: string;
+          option_order: NonNullable<Json>;
+          position: number;
+          question_id: string;
+          question_version_id: string;
+        };
+        Update: {
+          challenge_id?: string;
+          option_order?: NonNullable<Json>;
+          position?: number;
+          question_id?: string;
+          question_version_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "daily_challenge_questions_challenge_id_fkey";
+            columns: ["challenge_id"];
+            isOneToOne: false;
+            referencedRelation: "daily_challenges";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      daily_challenges: {
+        Row: {
+          challenge_date: string;
+          closed_at: string | null;
+          created_at: string;
+          id: string;
+          locale: string;
+          question_count: number;
+          rules_version: number;
+          void_reason: string | null;
+          voided_at: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          challenge_date: string;
+          closed_at?: string | null;
+          created_at?: string;
+          id?: string;
+          locale?: string;
+          question_count: number;
+          rules_version?: number;
+          void_reason?: string | null;
+          voided_at?: string | null;
+        };
+        Update: {
+          challenge_date?: string;
+          closed_at?: string | null;
+          created_at?: string;
+          id?: string;
+          locale?: string;
+          question_count?: number;
+          rules_version?: number;
+          void_reason?: string | null;
+          voided_at?: string | null;
         };
         Relationships: [];
       };
@@ -423,12 +583,198 @@ export type Database = {
         };
         Relationships: [];
       };
+      question_reports: {
+        Row: {
+          attempt_id: string | null;
+          created_at: string;
+          details: string | null;
+          id: string;
+          question_id: string;
+          question_version_id: string;
+          reason: Database["public"]["Enums"]["report_reason"];
+          reporter_id: string;
+          resolution_note: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          status: Database["public"]["Enums"]["report_status"];
+        };
+        ComputedFields: never;
+        Insert: {
+          attempt_id?: string | null;
+          created_at?: string;
+          details?: string | null;
+          id?: string;
+          question_id: string;
+          question_version_id: string;
+          reason: Database["public"]["Enums"]["report_reason"];
+          reporter_id: string;
+          resolution_note?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          status?: Database["public"]["Enums"]["report_status"];
+        };
+        Update: {
+          attempt_id?: string | null;
+          created_at?: string;
+          details?: string | null;
+          id?: string;
+          question_id?: string;
+          question_version_id?: string;
+          reason?: Database["public"]["Enums"]["report_reason"];
+          reporter_id?: string;
+          resolution_note?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          status?: Database["public"]["Enums"]["report_status"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "question_reports_attempt_id_fkey";
+            columns: ["attempt_id"];
+            isOneToOne: false;
+            referencedRelation: "attempts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      rate_limits: {
+        Row: {
+          bucket_key: string;
+          hits: number;
+          window_start: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          bucket_key: string;
+          hits?: number;
+          window_start: string;
+        };
+        Update: {
+          bucket_key?: string;
+          hits?: number;
+          window_start?: string;
+        };
+        Relationships: [];
+      };
+      user_achievements: {
+        Row: {
+          achievement_key: string;
+          unlocked_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          achievement_key: string;
+          unlocked_at?: string;
+          user_id: string;
+        };
+        Update: {
+          achievement_key?: string;
+          unlocked_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      admin_cleanup_guests: { Args: { p_older_than?: string }; Returns: Json };
+      admin_inventory: { Args: { p_actor: string }; Returns: Json };
+      admin_quarantine_question: {
+        Args: { p_actor: string; p_note: string; p_quarantine: boolean; p_question_id: string };
+        Returns: Json;
+      };
+      admin_question_archive: {
+        Args: { p_actor: string; p_archived: boolean; p_question_id: string };
+        Returns: Json;
+      };
+      admin_question_detail: { Args: { p_actor: string; p_question_id: string }; Returns: Json };
+      admin_question_publish: { Args: { p_actor: string; p_question_id: string }; Returns: Json };
+      admin_question_save: {
+        Args: {
+          p_actor: string;
+          p_content_hash: string;
+          p_correct_option_id: number;
+          p_difficulty: string;
+          p_explanation: string;
+          p_external_id: string;
+          p_options: Json;
+          p_prompt: string;
+          p_question_id: string;
+          p_question_type: string;
+          p_statements: string[];
+          p_stem: string;
+          p_topic_slug: string;
+        };
+        Returns: Json;
+      };
+      admin_question_search: {
+        Args: {
+          p_actor: string;
+          p_difficulty?: string;
+          p_limit?: number;
+          p_query?: string;
+          p_state?: string;
+          p_topic_slug?: string;
+          p_type?: string;
+        };
+        Returns: Json;
+      };
+      admin_report_queue: { Args: { p_actor: string; p_status?: string }; Returns: Json };
+      admin_require: {
+        Args: { p_actor: string };
+        Returns: Database["public"]["Enums"]["admin_role"];
+      };
+      admin_resolve_report: {
+        Args: { p_actor: string; p_note: string; p_report_id: string; p_status: string };
+        Returns: Json;
+      };
+      admin_role_of: {
+        Args: { p_actor: string };
+        Returns: Database["public"]["Enums"]["admin_role"];
+      };
+      admin_topic_save: {
+        Args: {
+          p_actor: string;
+          p_description: string;
+          p_is_active: boolean;
+          p_name: string;
+          p_slug: string;
+          p_sort_order: number;
+        };
+        Returns: Json;
+      };
+      admin_void_attempt: {
+        Args: { p_actor: string; p_attempt_id: string; p_reason: string };
+        Returns: Json;
+      };
+      admin_void_daily_challenge: {
+        Args: { p_actor: string; p_date: string; p_reason: string };
+        Returns: Json;
+      };
+      expire_stale_attempts: {
+        Args: { p_active_days?: number; p_ready_minutes?: number };
+        Returns: Json;
+      };
       game_advance: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
+      game_attempt_review: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
+      game_award_achievements: { Args: { p_owner: string }; Returns: Json };
+      game_create_attempt: {
+        Args: {
+          p_attempt_id: string;
+          p_count: number;
+          p_create_key: string;
+          p_difficulty: string;
+          p_duration_seconds: number;
+          p_mode: string;
+          p_owner: string;
+          p_seed: string;
+          p_topics: string[];
+        };
+        Returns: Json;
+      };
       game_create_classic_attempt: {
         Args: {
           p_attempt_id: string;
@@ -441,11 +787,92 @@ export type Database = {
         };
         Returns: Json;
       };
+      game_create_daily_attempt: { Args: { p_create_key: string; p_owner: string }; Returns: Json };
+      game_create_practice_attempt: {
+        Args: {
+          p_attempt_id: string;
+          p_count: number;
+          p_create_key: string;
+          p_difficulty: string;
+          p_owner: string;
+          p_seed: string;
+          p_source: string;
+          p_topics: string[];
+        };
+        Returns: Json;
+      };
+      game_create_survival_attempt: {
+        Args: {
+          p_attempt_id: string;
+          p_count: number;
+          p_create_key: string;
+          p_difficulty: string;
+          p_owner: string;
+          p_seed: string;
+          p_topics: string[];
+        };
+        Returns: Json;
+      };
       game_current_question: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
+      game_daily_leaderboard: {
+        Args: { p_date: string; p_limit?: number; p_offset?: number; p_viewer: string };
+        Returns: Json;
+      };
+      game_daily_status: { Args: { p_owner: string }; Returns: Json };
+      game_ensure_daily_challenge: {
+        Args: { p_date?: string };
+        Returns: {
+          challenge_date: string;
+          closed_at: string | null;
+          created_at: string;
+          id: string;
+          locale: string;
+          question_count: number;
+          rules_version: number;
+          void_reason: string | null;
+          voided_at: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "daily_challenges";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      game_ensure_profile: { Args: { p_display_name?: string; p_user: string }; Returns: Json };
+      game_expire_attempt: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
       game_finish: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
+      game_list_bookmarks: {
+        Args: { p_owner: string };
+        Returns: {
+          created_at: string;
+          prompt: string;
+          question_id: string;
+          topic_name: string;
+          topic_slug: string;
+        }[];
+      };
+      game_merge_guest: { Args: { p_guest: string; p_target: string }; Returns: Json };
+      game_progress: { Args: { p_owner: string }; Returns: Json };
+      game_public_profile: { Args: { p_owner: string }; Returns: Json };
+      game_report_question: {
+        Args: {
+          p_attempt_id: string;
+          p_details: string;
+          p_question_version_id: string;
+          p_reason: string;
+          p_reporter: string;
+        };
+        Returns: Json;
+      };
+      game_set_bookmark: {
+        Args: { p_bookmarked: boolean; p_owner: string; p_question_id: string };
+        Returns: Json;
+      };
       game_start_attempt: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
       game_submit_answer: {
         Args: {
+          p_action: string;
           p_attempt_id: string;
           p_idempotency_key: string;
           p_option_id: number;
@@ -454,12 +881,64 @@ export type Database = {
         };
         Returns: Json;
       };
+      game_submit_daily_answer: {
+        Args: {
+          p_action: string;
+          p_attempt_id: string;
+          p_idempotency_key: string;
+          p_option_id: number;
+          p_owner: string;
+          p_position: number;
+        };
+        Returns: Json;
+      };
+      game_submit_survival_answer: {
+        Args: {
+          p_action: string;
+          p_attempt_id: string;
+          p_idempotency_key: string;
+          p_option_id: number;
+          p_owner: string;
+          p_position: number;
+        };
+        Returns: Json;
+      };
+      game_update_profile: {
+        Args: { p_display_name: string; p_leaderboard_public: boolean; p_owner: string };
+        Returns: Json;
+      };
+      rate_limit_hit: {
+        Args: { p_key: string; p_limit: number; p_window_seconds: number };
+        Returns: Json;
+      };
+      topic_inventory: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          question_count: number;
+          slug: string;
+        }[];
+      };
+      topic_summaries: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          available: number;
+          description: string;
+          display_color: string;
+          icon_key: string;
+          name: string;
+          slug: string;
+          sort_order: number;
+        }[];
+      };
     };
     Enums: {
       admin_role: "editor" | "admin";
       answer_action: "answer" | "skip" | "reveal" | "timeout";
       attempt_mode: "classic" | "time_rush" | "practice" | "daily" | "survival";
       attempt_status: "ready" | "active" | "completed" | "expired" | "abandoned";
+      report_reason:
+        "incorrect_answer" | "ambiguous" | "outdated" | "typo" | "inappropriate" | "other";
+      report_status: "open" | "resolved" | "dismissed";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -581,6 +1060,15 @@ export const Constants = {
       answer_action: ["answer", "skip", "reveal", "timeout"],
       attempt_mode: ["classic", "time_rush", "practice", "daily", "survival"],
       attempt_status: ["ready", "active", "completed", "expired", "abandoned"],
+      report_reason: [
+        "incorrect_answer",
+        "ambiguous",
+        "outdated",
+        "typo",
+        "inappropriate",
+        "other",
+      ],
+      report_status: ["open", "resolved", "dismissed"],
     },
   },
 } as const;
