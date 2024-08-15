@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/container";
-import { GuestSessionProvider } from "@/features/auth/guest-session";
 import { GuestNotice } from "@/features/auth/guest-notice";
 import { SetupShell } from "@/features/quiz/setup-shell";
 import { parseSetupParams } from "@/features/quiz/setup-params";
@@ -38,7 +37,7 @@ export default async function PlayPage({
             : "Nothing here is permanent — you can change any of it before the first question."}
         </p>
       </header>
-      <GuestSessionProvider>
+      <>
         <GuestNotice />
         <SetupShell
           initialTopics={setup.topics}
@@ -49,7 +48,7 @@ export default async function PlayPage({
           quick={setup.quick}
           problems={setup.problems}
         />
-      </GuestSessionProvider>
+      </>
     </Container>
   );
 }

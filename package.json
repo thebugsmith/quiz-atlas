@@ -22,7 +22,9 @@
     "content:import": "tsx scripts/import-questions.ts",
     "content:convert": "tsx scripts/convert-source.ts",
     "admin:grant": "tsx scripts/make-admin.ts",
-    "daily:prepare": "tsx scripts/prepare-daily.ts"
+    "daily:prepare": "tsx scripts/prepare-daily.ts",
+    "content:report": "tsx scripts/content-report.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
@@ -35,6 +37,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/turbopack": "4.3.3",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",

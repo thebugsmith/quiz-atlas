@@ -34,14 +34,25 @@ export function DailyShell() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/daily", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : Promise.reject(new Error("failed"))))
-      .then((body: DailyStatus) => {
-        if (!cancelled) setStatus(body);
-      })
-      .catch(() => {
-        if (!cancelled) setError("Could not load today's challenge.");
-      });
+
+    async function load(attempt = 0): Promise<void> {
+      const response = await fetch("/api/daily", { cache: "no-store" });
+      if (cancelled) return;
+
+      // Opening /daily directly can beat the guest session into existence; one retry
+      // covers that without hiding a real failure.
+      if (response.status === 401 && attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        return load(1);
+      }
+      if (!response.ok) {
+        setError("Could not load today\u2019s challenge.");
+        return;
+      }
+      setStatus(await response.json());
+    }
+
+    void load();
     return () => {
       cancelled = true;
     };

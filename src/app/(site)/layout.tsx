@@ -1,6 +1,7 @@
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { GuestSessionProvider } from "@/features/auth/guest-session";
 
 /**
  * The browsing shell: header, footer and thumb-reachable navigation. The game
@@ -8,7 +9,7 @@ import { MobileNav } from "@/components/layout/mobile-nav";
  */
 export default function SiteLayout({ children }: LayoutProps<"/">) {
   return (
-    <>
+    <GuestSessionProvider>
       <a
         href="#main"
         className="focus:bg-surface sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow"
@@ -21,6 +22,6 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
       </main>
       <SiteFooter />
       <MobileNav />
-    </>
+    </GuestSessionProvider>
   );
 }
