@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { ProfileForm } from "@/features/account/profile-form";
+import { DataControls } from "@/features/account/data-controls";
 import { cn } from "@/lib/cn";
 
 type Identity = {
@@ -240,6 +241,7 @@ export function AccountShell() {
           </p>
         ) : null}
         <ProfileForm />
+        <DataControls email={identity.email} />
       </div>
     );
   }
