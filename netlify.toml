@@ -1,0 +1,12 @@
+# Netlify serves the public hostname and proxies every request to the OCI app, which
+# owns the API routes, cookies and database access. Swapping to an own domain later only
+# changes this file and DNS — the server keeps running where it is.
+[build]
+  publish = "public"
+  command = "echo 'Fronted by Netlify; the app runs on the OCI host'"
+
+[[redirects]]
+  from = "/*"
+  to = "http://161.118.171.47:3000/:splat"
+  status = 200
+  force = true

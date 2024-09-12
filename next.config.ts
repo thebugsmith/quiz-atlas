@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // A self-contained server bundle, so the OCI container only needs node.
+  output: "standalone",
   cacheComponents: true,
   partialPrefetching: true,
   // The dev server is opened from more than one host name (localhost, 127.0.0.1,
