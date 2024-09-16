@@ -34,8 +34,6 @@ yarn-error.log*
 .env*
 !.env.example
 
-# local credentials handed to the project out of band
-/credentials
 
 # vercel
 .vercel
