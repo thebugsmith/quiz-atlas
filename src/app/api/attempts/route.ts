@@ -10,7 +10,7 @@ import {
 /**
  * Creates a ready attempt with a frozen question set. The browser sends its intent;
  * the server decides which questions exist, in what order, with which option order,
- * and — for Time Rush — what the queue length is.
+ * and, for Time Rush, what the queue length is.
  */
 export async function POST(request: Request) {
   const user = await requireUser();

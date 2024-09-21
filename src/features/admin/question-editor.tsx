@@ -98,7 +98,7 @@ export function QuestionEditor({
 
     setNotice(
       body.unchanged
-        ? "No changes — the published version already matches."
+        ? "No changes. The published version already matches."
         : body.question_id && value.questionId === null
           ? "Saved as a draft. Publish it to make it playable."
           : "Saved a new draft version. Publish it to make it playable.",
@@ -188,7 +188,7 @@ export function QuestionEditor({
           </div>
           <div>
             <label htmlFor="admin-statements" className="mb-1 block text-sm font-medium">
-              Statements — one per line
+              Statements, one per line
             </label>
             <textarea
               id="admin-statements"
@@ -215,7 +215,7 @@ export function QuestionEditor({
       </div>
 
       <fieldset>
-        <legend className="mb-1 text-sm font-medium">Options — mark the correct one</legend>
+        <legend className="mb-1 text-sm font-medium">Options: mark the correct one</legend>
         <div className="space-y-2">
           {value.options.map((option, index) => (
             <div key={option.id} className="flex items-center gap-2">

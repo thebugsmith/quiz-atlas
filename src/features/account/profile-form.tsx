@@ -8,7 +8,7 @@ type Profile = { display_name: string; leaderboard_public: boolean } | null;
 const field =
   "border-border bg-surface focus-visible:outline-primary h-11 w-full rounded-[var(--radius-control)] border px-3 text-[15px] focus-visible:outline-2 focus-visible:outline-offset-2";
 
-/** Display name and leaderboard visibility — both belong only to this account. */
+/** Display name and leaderboard visibility. Both belong only to this account. */
 export function ProfileForm() {
   const [profile, setProfile] = useState<Profile>(null);
   const [name, setName] = useState("");

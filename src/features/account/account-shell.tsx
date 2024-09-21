@@ -199,7 +199,7 @@ export function AccountShell() {
               options: { emailRedirectTo: `${window.location.origin}/account?confirmed=1` },
             });
             setBusy(false);
-            setMessage("Sent again — check your inbox.");
+            setMessage("Sent again. Check your inbox.");
           }}
         >
           Resend confirmation

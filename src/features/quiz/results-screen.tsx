@@ -212,14 +212,14 @@ export function ResultsScreen({ attemptId }: { attemptId: string }) {
           <div>
             <h2 className="text-base font-semibold">Accuracy on answered questions</h2>
             <p className="text-muted-foreground mt-1 text-sm">
-              {attempt.accuracy}% — {attempt.correct_count} correct of {totalAnswered} answered.
+              {attempt.accuracy}% · {attempt.correct_count} correct of {totalAnswered} answered.
               {attempt.skipped_count > 0
                 ? ` ${attempt.skipped_count} skipped (not counted as wrong).`
                 : ""}
             </p>
           </div>
           <Badge tone="primary">
-            {attempt.correct_count} / {attempt.question_count} questions
+            {attempt.correct_count} / {totalAnswered} answered
           </Badge>
         </div>
 

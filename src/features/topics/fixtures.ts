@@ -1,5 +1,5 @@
 /**
- * DEVELOPMENT FIXTURE — replaced by the `topics` table in milestone 03.
+ * DEVELOPMENT FIXTURE: superseded by the `topics` table in milestone 03.
  *
  * Only launch topics and their presentation copy live here. No question counts,
  * scores, or player numbers: those come from the database, and inventing them

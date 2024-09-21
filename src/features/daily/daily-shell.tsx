@@ -74,7 +74,7 @@ export function DailyShell() {
         body?.error === "already_played"
           ? "This account already used today's ranked attempt."
           : body?.error === "insufficient_inventory"
-            ? "Today&rsquo;s set could not be built — there are not enough live questions."
+            ? "Today&rsquo;s set could not be built: not enough live questions."
             : "Could not start today's challenge.",
       );
       return;

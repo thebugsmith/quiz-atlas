@@ -212,7 +212,7 @@ function QuestionsTab({ topics }: { topics: InventoryTopic[] }) {
         ? action === "publish"
           ? "Published the newest version."
           : action === "archive"
-            ? "Archived — it can no longer be dealt."
+            ? "Archived. It can no longer be dealt."
             : "Restored. Publish it again to make it playable."
         : (payload?.error ?? "That action failed."),
     );
@@ -440,7 +440,7 @@ function ReportsTab() {
     setNotice(
       response.ok
         ? quarantined
-          ? "Quarantined — no new quiz will include it."
+          ? "Quarantined. No new quiz will include it."
           : "Released back into the pool."
         : "Could not change quarantine.",
     );

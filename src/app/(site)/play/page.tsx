@@ -34,7 +34,7 @@ export default async function PlayPage({
         <p className="text-muted-foreground mt-1.5 max-w-prose text-[15px]">
           {setup.quick
             ? "Ten mixed questions from every topic. Change the setup if you want something else."
-            : "Nothing here is permanent — you can change any of it before the first question."}
+            : "Nothing here is permanent. You can change any of it before the first question."}
         </p>
       </header>
       <>

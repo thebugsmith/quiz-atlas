@@ -33,7 +33,7 @@ export function GuestNotice() {
     <p className="text-muted-foreground mb-4 inline-flex items-center gap-2 text-sm">
       <UserRound className="size-4" aria-hidden="true" />
       {session.isAnonymous
-        ? "Playing as a guest. Your results stay in this browser — clearing site data or signing out loses them."
+        ? "Playing as a guest. Your results stay in this browser. Clearing site data or signing out loses them."
         : "Signed in."}
     </p>
   );

@@ -64,7 +64,7 @@ async function handle(request: Request, params: Promise<{ id: string }>): Promis
 }
 
 /**
- * Accepts exactly one action per question — an answer or a skip. A retry with the
+ * Accepts exactly one action per question: an answer or a skip. A retry with the
  * same idempotency key returns the stored outcome instead of scoring twice.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {

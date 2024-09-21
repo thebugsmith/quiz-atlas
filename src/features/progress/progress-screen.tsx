@@ -16,25 +16,8 @@ const modeLabels: Record<string, string> = {
 };
 
 function percent(part: number, whole: number) {
-  if (whole === 0) return "—";
+  if (whole === 0) return "-";
   return `${Math.round((part / whole) * 100)}%`;
-}
-
-function dayLabel(value: string | null) {
-  if (!value) return "—";
-  return new Date(`${value}T00:00:00Z`).toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
-
-/** The next UTC midnight in the player's own clock, so the boundary is concrete. */
-function nextUtcMidnight() {
-  const now = new Date();
-  const tomorrow = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
-  return new Date(tomorrow).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
 
 export function ProgressScreen() {
@@ -100,7 +83,7 @@ export function ProgressScreen() {
               Accuracy
             </p>
             <p className="mt-1 text-3xl font-semibold tracking-tight">
-              {totals.accuracy === null ? "—" : percent(totals.correct, totals.answered)}
+              {totals.accuracy === null ? "-" : percent(totals.correct, totals.answered)}
             </p>
             <p className="text-muted-foreground mt-1 text-xs">
               {totals.correct} correct of {totals.answered} answered
@@ -120,18 +103,6 @@ export function ProgressScreen() {
             </p>
           </CardBody>
         </Card>
-      </section>
-
-      <section aria-labelledby="streak-heading">
-        <h2 id="streak-heading" className="mb-2 text-lg font-semibold tracking-tight">
-          The streak counts UTC days
-        </h2>
-        <p className="text-muted-foreground max-w-prose text-sm leading-relaxed">
-          A day counts when one finished Classic, Time Rush, Survival or Daily quiz has at least
-          five submitted answers. Days are separated at midnight UTC — for you that is{" "}
-          <strong className="text-foreground">{nextUtcMidnight()}</strong> local time. Your last
-          active day: {dayLabel(streak.last_day)}.
-        </p>
       </section>
 
       {nothingYet ? (

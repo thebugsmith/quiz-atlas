@@ -250,7 +250,7 @@ export function SetupShell({
       }
 
       // The key belongs to this start only. Keeping it would make the next "Start
-      // quiz" resolve to the same attempt — which, once finished, shows that old
+      // quiz" resolve to the same attempt: once finished it shows that old
       // result instead of a new quiz.
       createKey.current = null;
       router.push(`/quiz/${body.attempt_id}`);
@@ -612,7 +612,7 @@ export function SetupShell({
             ) : (
               <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Questions</dt>
-                <dd className="font-medium">{countValid ? effectiveCount : "—"}</dd>
+                <dd className="font-medium">{countValid ? effectiveCount : "-"}</dd>
               </div>
             )}
             <div className="flex justify-between gap-4">
@@ -668,7 +668,7 @@ export function SetupShell({
               ? `${duration}s as fast as you can · ${difficulty}`
               : surviving
                 ? `three lives · ${difficulty}`
-                : `${countValid ? effectiveCount : "—"} questions · ${difficulty}`}
+                : `${countValid ? effectiveCount : "-"} questions · ${difficulty}`}
           </p>
           {quick ? (
             <p className="mt-3 text-center text-xs">

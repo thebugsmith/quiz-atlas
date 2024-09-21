@@ -736,9 +736,9 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
                 {attempt.mode === "daily" ? (
                   "Answer saved"
                 ) : phase.feedback.action === "reveal" ? (
-                  "Answer revealed — no points"
+                  "Answer revealed, no points"
                 ) : phase.feedback.action === "skip" ? (
-                  "Skipped — no points"
+                  "Skipped, no points"
                 ) : phase.feedback.is_correct ? (
                   <>
                     <Check className="text-success size-4" aria-hidden="true" /> Correct · +
@@ -746,7 +746,7 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
                   </>
                 ) : (
                   <>
-                    <X className="text-danger size-4" aria-hidden="true" /> Incorrect — the answer
+                    <X className="text-danger size-4" aria-hidden="true" /> Incorrect, the answer
                     was{" "}
                     {String.fromCharCode(
                       65 +

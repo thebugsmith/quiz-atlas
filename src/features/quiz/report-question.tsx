@@ -56,7 +56,7 @@ export function ReportQuestion({
     if (!response.ok) {
       setError(
         body?.error === "already_reported"
-          ? "You already reported this question — it is with the moderators."
+          ? "You already reported this question. It is with the moderators."
           : body?.error === "too_many_reports"
             ? "That is a lot of reports in a short time. Try again later."
             : body?.error === "invalid_request"
@@ -66,7 +66,7 @@ export function ReportQuestion({
       return;
     }
 
-    setMessage("Thanks — the moderators will look at this version.");
+    setMessage("Thanks. The moderators will look at this version.");
     setDetails("");
     setOpen(false);
   }
