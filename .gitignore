@@ -46,3 +46,6 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /.playwright/
+
+# question source batches stay local (never in the repo or its history)
+/data/questions/*.json
