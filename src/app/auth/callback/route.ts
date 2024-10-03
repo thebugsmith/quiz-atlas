@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 /**
- * PKCE landing point. Supabase redirects emailed links here with `?code=…`; the code is
- * exchanged server-side so the session cookies are written by us, not by a script.
+ * PKCE landing point for every Supabase redirect: Google sign-in today, emailed links if
+ * they ever come back. The code is exchanged server-side so the session cookies are
+ * written by us rather than by a script.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const next = url.searchParams.get("next") ?? "/account?confirmed=1";
+  const next = url.searchParams.get("next") ?? "/account";
 
   if (!code) {
     return NextResponse.redirect(new URL("/account?error=invalid_link", url.origin));
