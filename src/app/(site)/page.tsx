@@ -5,7 +5,6 @@ import { Card, CardBody, CardTitle } from "@/components/ui/card";
 import { ButtonLink } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { topicFixtures } from "@/features/topics/fixtures";
 import { HomeTopicGrid } from "@/features/topics/home-topic-grid";
 
 export default function Home() {
@@ -53,7 +52,7 @@ export default function Home() {
               </Link>
             }
           />
-          <HomeTopicGrid topics={topicFixtures} />
+          <HomeTopicGrid />
         </Container>
       </section>
 

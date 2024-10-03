@@ -1,21 +1,48 @@
 import {
+  Atom,
   BookOpen,
+  Cpu,
+  Dna,
   FlaskConical,
   Globe2,
   Landmark,
-  Cpu,
+  Scale,
+  TrendingUp,
   Trophy,
   type LucideIcon,
 } from "lucide-react";
-import type { TopicFixture } from "./fixtures";
 
-const icons: Record<TopicFixture["icon"], LucideIcon> = {
+type TopicLike = {
+  slug: string;
+  name?: string;
+  description?: string;
+  iconKey?: string;
+  displayColor?: string;
+  icon?: string;
+  accent?: string;
+};
+
+/** Icons come from the database's `icon_key`; the slug is the fallback for older rows. */
+const icons: Record<string, LucideIcon> = {
+  "globe-2": Globe2,
+  "flask-conical": FlaskConical,
+  cpu: Cpu,
+  trophy: Trophy,
+  "book-open": BookOpen,
+  "trending-up": TrendingUp,
+  landmark: Landmark,
+  scale: Scale,
+  dna: Dna,
+  atom: Atom,
   history: Landmark,
   geography: Globe2,
   science: FlaskConical,
+  biology: Dna,
   technology: Cpu,
   sports: Trophy,
   literature: BookOpen,
+  economy: TrendingUp,
+  polity: Scale,
 };
 
 const accents: Record<string, string> = {
@@ -25,14 +52,36 @@ const accents: Record<string, string> = {
   blue: "bg-blue-500/12 text-blue-700 dark:text-blue-300",
   rose: "bg-rose-500/12 text-rose-700 dark:text-rose-300",
   indigo: "bg-indigo-500/12 text-indigo-700 dark:text-indigo-300",
+  emerald: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
+  cyan: "bg-cyan-500/12 text-cyan-700 dark:text-cyan-300",
+  orange: "bg-orange-500/12 text-orange-700 dark:text-orange-300",
+  slate: "bg-slate-500/12 text-slate-700 dark:text-slate-300",
 };
 
-export function TopicIcon({ topic, className }: { topic: TopicFixture; className?: string }) {
-  const Icon = icons[topic.icon];
+const slugColors: Record<string, string> = {
+  history: "amber",
+  geography: "teal",
+  science: "violet",
+  biology: "emerald",
+  technology: "blue",
+  sports: "rose",
+  literature: "indigo",
+  economy: "cyan",
+  polity: "slate",
+};
+
+export function TopicIcon({ topic, className }: { topic: TopicLike; className?: string }) {
+  const Icon =
+    icons[(topic.iconKey ?? "").toLowerCase()] ??
+    icons[(topic.icon ?? "").toLowerCase()] ??
+    icons[topic.slug] ??
+    Atom;
+  const color = topic.displayColor ?? topic.accent ?? slugColors[topic.slug] ?? "blue";
+
   return (
     <span
       className={`inline-flex size-10 shrink-0 items-center justify-center rounded-xl ${
-        accents[topic.accent] ?? accents.blue
+        accents[color] ?? accents.blue
       } ${className ?? ""}`}
     >
       <Icon className="size-5" aria-hidden="true" />

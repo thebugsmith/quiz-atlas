@@ -4,22 +4,24 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { topicFixtures } from "./fixtures";
 import { TopicIcon } from "./topic-icon";
+import { useTopics } from "./use-topics";
 
-/** Searchable topic grid. Counts arrive with the database in milestone 03. */
+/** Searchable topic grid, fed by the live topic list and counts from `/api/topics`. */
 export function TopicsBrowser() {
   const [query, setQuery] = useState("");
+  const topics = useTopics();
 
   const results = useMemo(() => {
+    const all = topics ?? [];
     const needle = query.trim().toLowerCase();
-    if (!needle) return topicFixtures;
-    return topicFixtures.filter(
+    if (!needle) return all;
+    return all.filter(
       (topic) =>
         topic.name.toLowerCase().includes(needle) ||
         topic.description.toLowerCase().includes(needle),
     );
-  }, [query]);
+  }, [query, topics]);
 
   return (
     <div>

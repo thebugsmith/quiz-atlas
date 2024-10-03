@@ -356,15 +356,7 @@ export function SetupShell({
                             empty && "cursor-not-allowed opacity-60",
                           )}
                         >
-                          <TopicIcon
-                            topic={{
-                              slug: topic.slug,
-                              name: topic.name,
-                              description: topic.description,
-                              icon: "history",
-                              accent: "blue",
-                            }}
-                          />
+                          <TopicIcon topic={topic} />
                           <span className="min-w-0 flex-1">
                             <span className="block text-[15px] font-medium">{topic.name}</span>
                             <span className="text-muted-foreground block text-xs leading-snug">

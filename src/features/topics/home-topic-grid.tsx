@@ -4,15 +4,17 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, Shuffle } from "lucide-react";
 import { TopicIcon } from "@/features/topics/topic-icon";
-import type { TopicFixture } from "@/features/topics/fixtures";
+import { useTopics } from "@/features/topics/use-topics";
 
 /** Five topics plus Mix fill the first 2x3 grid; everything else waits behind the toggle. */
 const FIRST_VIEW = 5;
 
-export function HomeTopicGrid({ topics }: { topics: TopicFixture[] }) {
+export function HomeTopicGrid() {
+  const topics = useTopics();
   const [open, setOpen] = useState(false);
-  const shown = open ? topics : topics.slice(0, FIRST_VIEW);
-  const hidden = topics.length - shown.length;
+  const all = topics ?? [];
+  const shown = open ? all : all.slice(0, FIRST_VIEW);
+  const hidden = all.length - shown.length;
 
   return (
     <>
@@ -34,6 +36,20 @@ export function HomeTopicGrid({ topics }: { topics: TopicFixture[] }) {
           </Link>
         </li>
 
+        {topics === null
+          ? Array.from({ length: FIRST_VIEW }, (_, index) => (
+              <li key={`loading-${index}`}>
+                <span className="border-border bg-surface flex h-full items-start gap-3 rounded-[var(--radius-card)] border p-4">
+                  <span className="bg-surface-muted size-10 shrink-0 animate-pulse rounded-xl" />
+                  <span className="min-w-0 flex-1 space-y-2">
+                    <span className="bg-surface-muted block h-4 w-24 animate-pulse rounded" />
+                    <span className="bg-surface-muted block h-3 w-full animate-pulse rounded" />
+                  </span>
+                </span>
+              </li>
+            ))
+          : null}
+
         {shown.map((topic) => (
           <li key={topic.slug}>
             <Link
@@ -52,7 +68,7 @@ export function HomeTopicGrid({ topics }: { topics: TopicFixture[] }) {
         ))}
       </ul>
 
-      {topics.length > FIRST_VIEW ? (
+      {all.length > FIRST_VIEW ? (
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
