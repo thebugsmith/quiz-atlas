@@ -71,7 +71,13 @@ export function AccountShell() {
       : await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
 
     setBusy(false);
-    if (authError) setError(authError.message);
+    if (authError) {
+      setError(
+        authError.message.toLowerCase().includes("manual linking")
+          ? "Linking Google to a guest session is switched off on this project. Enable manual linking in Supabase → Authentication → Settings, or sign out and sign in fresh."
+          : authError.message,
+      );
+    }
   }
 
   async function handleSignOut() {
