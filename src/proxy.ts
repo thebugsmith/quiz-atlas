@@ -35,13 +35,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.json({ error: "cross_origin" }, { status: 403 });
   }
 
-  // Emailed links land on the site root with a PKCE code. Hand it to the callback
-  // route, which exchanges it server-side before any page renders.
+  // OAuth and emailed links can land anywhere with a PKCE code. Hand it to the callback
+  // route, which exchanges it server-side before any page renders — but never redirect
+  // the callback route to itself, or the browser spins in a loop.
   const code = request.nextUrl.searchParams.get("code");
-  if (code) {
+  if (code && request.nextUrl.pathname !== "/auth/callback") {
     const callback = request.nextUrl.clone();
     callback.pathname = "/auth/callback";
-    callback.search = `?code=${encodeURIComponent(code)}`;
     return NextResponse.redirect(callback);
   }
 
