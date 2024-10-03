@@ -43,7 +43,6 @@ export function DataControls({ email }: { email: string | null }) {
     }
 
     await getBrowserClient().auth.signOut();
-    await fetch("/api/account/guest-marker", { method: "DELETE" });
     router.push("/");
     router.refresh();
   }

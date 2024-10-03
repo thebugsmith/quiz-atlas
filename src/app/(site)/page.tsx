@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Clock3, Flame, Shuffle, Sparkles } from "lucide-react";
+import { ArrowRight, Clock3, Flame, Sparkles } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Card, CardBody, CardTitle } from "@/components/ui/card";
 import { ButtonLink } from "@/components/ui/button";
