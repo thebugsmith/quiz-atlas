@@ -7,6 +7,7 @@
  * here: every question needs four distinct options, the same option ids in every
  * language, and a correct id that exists. Nothing is written for a row that fails.
  */
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { Pool, type PoolClient } from "pg";
@@ -50,14 +51,20 @@ type PaperFile = {
   questions: Question[];
 };
 
-/** Stable hash of what a player would read, so re-imports can skip unchanged rows. */
-function fingerprint(value: unknown) {
-  const text = JSON.stringify(value, Object.keys(value as object).sort());
-  let hash = 0;
-  for (let index = 0; index < text.length; index += 1) {
-    hash = (hash * 31 + text.charCodeAt(index)) | 0;
+/** sha256 over a key-sorted serialisation: the column's check wants 64 hex chars. */
+function stable(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value as Record<string, unknown>)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stable((value as Record<string, unknown>)[key])}`)
+      .join(",")}}`;
   }
-  return `v1:${(hash >>> 0).toString(16)}:${text.length}`;
+  return JSON.stringify(value ?? null);
+}
+
+function fingerprint(value: unknown) {
+  return createHash("sha256").update(stable(value)).digest("hex");
 }
 
 function problems(question: Question): string[] {
@@ -225,8 +232,8 @@ async function main() {
 
         const nextNumber = (
           await client.query<{ n: number }>(
-            "select coalesce(max(version_number), 0) + 1 as n from content.question_versions where question_id = $1 and locale = $2",
-            [questionId, locale],
+            "select coalesce(max(version_number), 0) + 1 as n from content.question_versions where question_id = $1",
+            [questionId],
           )
         ).rows[0].n;
 

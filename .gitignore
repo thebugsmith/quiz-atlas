@@ -49,3 +49,5 @@ next-env.d.ts
 
 # question source batches stay local (never in the repo or its history)
 /data/questions/*.json
+# paper bundles stay local too
+/data/papers/*.json
