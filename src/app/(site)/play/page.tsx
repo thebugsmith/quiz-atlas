@@ -40,6 +40,7 @@ export default async function PlayPage({
       <>
         <GuestNotice />
         <SetupShell
+          key={JSON.stringify(setup)}
           initialTopics={setup.topics}
           initialDifficulty={setup.difficulty}
           initialCount={setup.count}
