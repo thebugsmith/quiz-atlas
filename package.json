@@ -21,6 +21,7 @@
     "db:types": "supabase gen types typescript --local --schema public,content > src/lib/supabase/database.types.ts",
     "content:import": "tsx scripts/import-questions.ts",
     "content:wipe": "tsx scripts/wipe-questions.ts",
+    "paper:import": "tsx scripts/import-paper.ts",
     "admin:grant": "tsx scripts/make-admin.ts",
     "daily:prepare": "tsx scripts/prepare-daily.ts",
     "content:report": "tsx scripts/content-report.ts",
