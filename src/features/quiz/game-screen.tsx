@@ -90,6 +90,11 @@ function AutoAdvance({ delayMs, onAdvance }: { delayMs: number; onAdvance: () =>
 export function GameScreen({ attemptId }: { attemptId: string }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ name: "loading" });
+  // The next question arrives with the answer, so advancing is instant.
+  const prefetched = useRef<{
+    attempt: Attempt | null;
+    question: Question | null;
+  } | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -278,6 +283,7 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
         return;
       }
 
+      prefetched.current = body.next ?? null;
       setPhase({
         name: "feedback",
         question: phase.question,
@@ -377,6 +383,23 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
     if ((phase.name !== "feedback" && phase.name !== "stale") || pending) return;
     setPending(true);
     setNotice(null);
+
+    const queued = prefetched.current;
+    prefetched.current = null;
+    if (queued && phase.name === "feedback") {
+      setSelected(null);
+      if (
+        queued.attempt?.status === "completed" ||
+        !queued.question ||
+        queued.question.position === null
+      ) {
+        router.replace(`/results/${attemptId}`);
+        return;
+      }
+      setPhase({ name: "question", question: queued.question, attempt: phase.attempt });
+      setPending(false);
+      return;
+    }
 
     try {
       const response = await fetch(`/api/attempts/${attemptId}/next`, { method: "POST" });
