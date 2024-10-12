@@ -60,30 +60,7 @@ async function handle(request: Request, params: Promise<{ id: string }>): Promis
     return mapDatabaseError(error) ?? gameJson({ error: "answer_failed" }, 500);
   }
 
-  // One round trip instead of two: after a scored answer the next question (never its
-  // key) travels back with the result, so advancing costs the player no extra latency.
-  const finished = Boolean((data as { finished?: boolean }).finished);
-  if (finished) return gameJson({ ...data, next: null });
-
-  const advanced = await rpc<Record<string, unknown>>("game_advance", {
-    p_attempt_id: id,
-    p_owner: user.id,
-  });
-  const current = await rpc<Record<string, unknown>>("game_current_question", {
-    p_attempt_id: id,
-    p_owner: user.id,
-  });
-
-  return gameJson({
-    ...data,
-    next:
-      advanced.error || current.error
-        ? null
-        : {
-            attempt: advanced.data?.attempt ?? null,
-            question: current.data?.question ?? null,
-          },
-  });
+  return gameJson({ ...data, next: null });
 }
 
 /**
