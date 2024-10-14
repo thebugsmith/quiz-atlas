@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { verifyAccessToken } from "@/lib/supabase/jwt";
 import type { Database } from "./database.types";
 
 export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -33,13 +34,24 @@ export async function createServerSupabase() {
 export type VerifiedUser = { id: string; isAnonymous: boolean };
 
 /**
- * Identity from a verified session. `getUser()` validates the JWT with Supabase
- * Auth; `getSession()` alone trusts whatever the cookie says, so it is never used
- * to decide ownership.
+ * Identity from a verified session.
+ *
+ * The access token is verified locally against the project's JWKS (ES256), which is a
+ * signature and expiry check — not a cookie read. Only when that is impossible (no
+ * token, unknown key, symmetric signing) does this ask Supabase Auth, so ownership is
+ * never decided on an unverified claim.
  */
 export async function getVerifiedUser(): Promise<VerifiedUser | null> {
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) return null;
-  return { id: data.user.id, isAnonymous: Boolean(data.user.is_anonymous) };
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  if (token) {
+    const claims = await verifyAccessToken(token);
+    if (claims) return { id: claims.sub, isAnonymous: claims.isAnonymous };
+  }
+
+  const { data: checked, error } = await supabase.auth.getUser();
+  if (error || !checked.user) return null;
+  return { id: checked.user.id, isAnonymous: Boolean(checked.user.is_anonymous) };
 }

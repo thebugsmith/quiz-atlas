@@ -40,20 +40,16 @@ async function handle(request: Request, params: Promise<{ id: string }>): Promis
     .eq("owner_id", user.id)
     .maybeSingle();
 
-  const fn =
-    attempt.data?.mode === "daily"
-      ? "game_submit_daily_answer"
-      : attempt.data?.mode === "survival"
-        ? "game_submit_survival_answer"
-        : "game_submit_answer";
-
-  const { data, error } = await rpc<Record<string, unknown>>(fn, {
+  // One function does the scoring and the advance, so the next question comes back with
+  // the result and the player never waits for a second call.
+  const { data, error } = await rpc<Record<string, unknown>>("game_answer_and_next", {
     p_attempt_id: id,
     p_owner: user.id,
     p_position: parsed.data.position,
     p_option_id: parsed.data.optionId,
     p_action: parsed.data.action,
     p_idempotency_key: parsed.data.idempotencyKey,
+    p_mode: attempt.data?.mode ?? "classic",
   });
 
   if (error) {

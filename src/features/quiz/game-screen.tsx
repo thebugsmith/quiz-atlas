@@ -386,7 +386,7 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
 
     const queued = prefetched.current;
     prefetched.current = null;
-    if (queued && phase.name === "feedback") {
+    if (queued?.question && phase.name === "feedback") {
       setSelected(null);
       if (
         queued.attempt?.status === "completed" ||
