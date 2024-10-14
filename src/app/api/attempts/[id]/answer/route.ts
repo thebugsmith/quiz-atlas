@@ -56,7 +56,7 @@ async function handle(request: Request, params: Promise<{ id: string }>): Promis
     return mapDatabaseError(error) ?? gameJson({ error: "answer_failed" }, 500);
   }
 
-  return gameJson({ ...data, next: null });
+  return gameJson(data);
 }
 
 /**
