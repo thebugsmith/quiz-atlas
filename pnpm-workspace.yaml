@@ -1,3 +1,5 @@
 allowBuilds:
+  # tsx runs on esbuild, and its postinstall is what installs the binary.
+  esbuild: true
   sharp: false
   unrs-resolver: false
