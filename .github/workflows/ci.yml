@@ -38,3 +38,6 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder
           NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          # Only satisfies module-level validation while pages are collected; the routes
+          # never run during a build.
+          SUPABASE_SECRET_KEY: ci-placeholder-secret
