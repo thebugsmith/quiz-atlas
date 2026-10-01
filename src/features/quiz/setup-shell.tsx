@@ -227,7 +227,7 @@ export function SetupShell({
         body: JSON.stringify({
           mode: timed ? "time_rush" : practising ? "practice" : surviving ? "survival" : "classic",
           source: practising ? source : "topics",
-          topics: allSelected ? (topics ?? []).map((topic) => topic.slug) : selected,
+          topics: allSelected ? [] : selected,
           difficulty,
           count: effectiveCount,
           durationSeconds: timed ? duration : undefined,

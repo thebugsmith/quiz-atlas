@@ -4,7 +4,9 @@ export const createAttemptSchema = z
   .object({
     mode: z.enum(["classic", "time_rush", "practice", "survival"]).default("classic"),
     source: z.enum(["topics", "bookmarks", "missed"]).default("topics"),
-    topics: z.array(z.string().min(1)).min(1, "choose at least one topic").max(8),
+    // An empty list means "all topics": the picker sends [] for mix, and so does a
+    // player who deselects everything.
+    topics: z.array(z.string().min(1)).max(32).default([]),
     difficulty: z.enum(["easy", "medium", "hard", "mixed"]),
     count: z.number().int().min(1).max(50).default(10),
     durationSeconds: z.union([z.literal(30), z.literal(60), z.literal(120)]).optional(),
