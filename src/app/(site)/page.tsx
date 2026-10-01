@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Clock3, Flame, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { Container } from "@/components/ui/container";
-import { Card, CardBody, CardTitle } from "@/components/ui/card";
 import { ButtonLink } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SectionHeading } from "@/components/ui/section-heading";
@@ -53,47 +52,6 @@ export default function Home() {
             }
           />
           <HomeTopicGrid />
-        </Container>
-      </section>
-
-      <section>
-        <Container className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <CardTitle className="flex items-center gap-2">
-                  <Flame className="text-warning size-4" aria-hidden="true" />
-                  Daily Challenge
-                </CardTitle>
-                <CardBody className="mt-1.5">
-                  One fixed set of questions per day, scored on a shared leaderboard. Sign in to
-                  enter.
-                </CardBody>
-              </div>
-              <Badge>Daily</Badge>
-            </div>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <ButtonLink href="/daily" variant="secondary" size="sm">
-                How it works
-              </ButtonLink>
-              <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs">
-                <Clock3 className="size-3.5" aria-hidden="true" />
-                Resets at 00:00 UTC
-              </span>
-            </div>
-          </Card>
-
-          <Card>
-            <CardTitle>Your progress</CardTitle>
-            <CardBody className="mt-1.5">
-              No games yet. Play a round and your recent scores will show up here.
-            </CardBody>
-            <div className="mt-4">
-              <ButtonLink href="/play" size="sm">
-                Start your first quiz
-              </ButtonLink>
-            </div>
-          </Card>
         </Container>
       </section>
     </div>
