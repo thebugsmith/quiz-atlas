@@ -6,6 +6,7 @@ import { Compass } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { MotionToggle } from "@/components/a11y/motion-toggle";
 import { Container } from "@/components/ui/container";
+import { examModeEnabled } from "@/features/exam/flags";
 import { cn } from "@/lib/cn";
 
 const navigation = [
@@ -19,6 +20,9 @@ const navigation = [
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const items = examModeEnabled
+    ? [...navigation.slice(0, 3), { href: "/exams", label: "Exams" }, ...navigation.slice(3)]
+    : navigation;
 
   return (
     <header className="border-border bg-background/85 sticky top-0 z-30 border-b backdrop-blur">
@@ -34,7 +38,7 @@ export function SiteHeader() {
         </Link>
 
         <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
-          {navigation.map((item) => {
+          {items.map((item) => {
             const active = pathname === item.href;
             return (
               <Link

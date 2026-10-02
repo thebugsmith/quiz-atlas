@@ -51,3 +51,6 @@ next-env.d.ts
 /data/questions/*.json
 # paper bundles stay local too
 /data/papers/*.json
+
+# exam mode notes stay local (docs/ is never committed)
+/docs/
