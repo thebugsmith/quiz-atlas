@@ -3,6 +3,683 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   content: {
     Tables: {
+      exam_authorities: {
+        Row: {
+          created_at: string;
+          id: string;
+          kind: string;
+          name: string;
+          slug: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          name: string;
+          slug: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          name?: string;
+          slug?: string;
+        };
+        Relationships: [];
+      };
+      exam_editions: {
+        Row: {
+          code: string;
+          created_at: string;
+          exam_id: string;
+          held_from: string | null;
+          held_to: string | null;
+          id: string;
+          is_active: boolean;
+          label: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          created_at?: string;
+          exam_id: string;
+          held_from?: string | null;
+          held_to?: string | null;
+          id?: string;
+          is_active?: boolean;
+          label: string;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          exam_id?: string;
+          held_from?: string | null;
+          held_to?: string | null;
+          id?: string;
+          is_active?: boolean;
+          label?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_editions_exam_id_fkey";
+            columns: ["exam_id"];
+            isOneToOne: false;
+            referencedRelation: "exams";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      exam_key_versions: {
+        Row: {
+          created_at: string;
+          id: string;
+          paper_id: string;
+          published_at: string | null;
+          source_note: string | null;
+          status: string;
+          version_number: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          id?: string;
+          paper_id: string;
+          published_at?: string | null;
+          source_note?: string | null;
+          status?: string;
+          version_number: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          paper_id?: string;
+          published_at?: string | null;
+          source_note?: string | null;
+          status?: string;
+          version_number?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_key_versions_paper_id_fkey";
+            columns: ["paper_id"];
+            isOneToOne: false;
+            referencedRelation: "papers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      exam_sources: {
+        Row: {
+          authority_id: string | null;
+          created_at: string;
+          id: string;
+          kind: string;
+          pages: number | null;
+          paper_id: string | null;
+          retrieved_at: string;
+          review_status: string;
+          rights_note: string | null;
+          sha256: string | null;
+          url: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          authority_id?: string | null;
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          pages?: number | null;
+          paper_id?: string | null;
+          retrieved_at?: string;
+          review_status?: string;
+          rights_note?: string | null;
+          sha256?: string | null;
+          url?: string | null;
+        };
+        Update: {
+          authority_id?: string | null;
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          pages?: number | null;
+          paper_id?: string | null;
+          retrieved_at?: string;
+          review_status?: string;
+          rights_note?: string | null;
+          sha256?: string | null;
+          url?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_sources_authority_id_fkey";
+            columns: ["authority_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_authorities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exam_sources_paper_id_fkey";
+            columns: ["paper_id"];
+            isOneToOne: false;
+            referencedRelation: "papers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      exam_stages: {
+        Row: {
+          code: string;
+          created_at: string;
+          exam_id: string;
+          id: string;
+          is_active: boolean;
+          name: string;
+          position: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          created_at?: string;
+          exam_id: string;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          position?: number;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          exam_id?: string;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          position?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_stages_exam_id_fkey";
+            columns: ["exam_id"];
+            isOneToOne: false;
+            referencedRelation: "exams";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      exams: {
+        Row: {
+          authority_id: string | null;
+          code: string | null;
+          created_at: string;
+          description: string | null;
+          family: string | null;
+          id: string;
+          is_active: boolean;
+          name: string;
+          slug: string;
+          sort_order: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          authority_id?: string | null;
+          code?: string | null;
+          created_at?: string;
+          description?: string | null;
+          family?: string | null;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          slug: string;
+          sort_order?: number;
+        };
+        Update: {
+          authority_id?: string | null;
+          code?: string | null;
+          created_at?: string;
+          description?: string | null;
+          family?: string | null;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          slug?: string;
+          sort_order?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exams_authority_id_fkey";
+            columns: ["authority_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_authorities";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      media: {
+        Row: {
+          alt_en: string | null;
+          alt_hi: string | null;
+          created_at: string;
+          height: number | null;
+          id: string;
+          mime: string;
+          sha256: string;
+          storage_path: string;
+          width: number | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          alt_en?: string | null;
+          alt_hi?: string | null;
+          created_at?: string;
+          height?: number | null;
+          id?: string;
+          mime?: string;
+          sha256: string;
+          storage_path: string;
+          width?: number | null;
+        };
+        Update: {
+          alt_en?: string | null;
+          alt_hi?: string | null;
+          created_at?: string;
+          height?: number | null;
+          id?: string;
+          mime?: string;
+          sha256?: string;
+          storage_path?: string;
+          width?: number | null;
+        };
+        Relationships: [];
+      };
+      paper_booklet_items: {
+        Row: {
+          booklet_id: string;
+          option_labels: NonNullable<Json>;
+          paper_id: string;
+          printed_number: number;
+          question_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          booklet_id: string;
+          option_labels?: NonNullable<Json>;
+          paper_id: string;
+          printed_number: number;
+          question_id: string;
+        };
+        Update: {
+          booklet_id?: string;
+          option_labels?: NonNullable<Json>;
+          paper_id?: string;
+          printed_number?: number;
+          question_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "paper_booklet_items_booklet_id_fkey";
+            columns: ["booklet_id"];
+            isOneToOne: false;
+            referencedRelation: "paper_booklets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "paper_booklet_items_membership";
+            columns: ["paper_id", "question_id"];
+            isOneToOne: false;
+            referencedRelation: "paper_questions";
+            referencedColumns: ["paper_id", "question_id"];
+          },
+        ];
+      };
+      paper_booklets: {
+        Row: {
+          code: string;
+          created_at: string;
+          id: string;
+          key_version_id: string | null;
+          option_label_style: string;
+          paper_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          code: string;
+          created_at?: string;
+          id?: string;
+          key_version_id?: string | null;
+          option_label_style?: string;
+          paper_id: string;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          id?: string;
+          key_version_id?: string | null;
+          option_label_style?: string;
+          paper_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "paper_booklets_key_same_paper";
+            columns: ["key_version_id", "paper_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_key_versions";
+            referencedColumns: ["id", "paper_id"];
+          },
+          {
+            foreignKeyName: "paper_booklets_paper_id_fkey";
+            columns: ["paper_id"];
+            isOneToOne: false;
+            referencedRelation: "papers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      paper_locales: {
+        Row: {
+          locale: string;
+          paper_id: string;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          locale: string;
+          paper_id: string;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          status?: string;
+        };
+        Update: {
+          locale?: string;
+          paper_id?: string;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "paper_locales_paper_id_fkey";
+            columns: ["paper_id"];
+            isOneToOne: false;
+            referencedRelation: "papers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      paper_questions: {
+        Row: {
+          paper_id: string;
+          position: number;
+          question_id: string;
+          section_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          paper_id: string;
+          position: number;
+          question_id: string;
+          section_id?: string | null;
+        };
+        Update: {
+          paper_id?: string;
+          position?: number;
+          question_id?: string;
+          section_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "paper_questions_paper_id_fkey";
+            columns: ["paper_id"];
+            isOneToOne: false;
+            referencedRelation: "papers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "paper_questions_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "questions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "paper_questions_section_id_fkey";
+            columns: ["section_id"];
+            isOneToOne: false;
+            referencedRelation: "paper_sections";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      paper_sections: {
+        Row: {
+          id: string;
+          paper_id: string;
+          position: number;
+          subject: string;
+          topic_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          id?: string;
+          paper_id: string;
+          position?: number;
+          subject: string;
+          topic_id?: string | null;
+        };
+        Update: {
+          id?: string;
+          paper_id?: string;
+          position?: number;
+          subject?: string;
+          topic_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "paper_sections_paper_id_fkey";
+            columns: ["paper_id"];
+            isOneToOne: false;
+            referencedRelation: "papers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "paper_sections_topic_id_fkey";
+            columns: ["topic_id"];
+            isOneToOne: false;
+            referencedRelation: "topics";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      paper_versions: {
+        Row: {
+          created_at: string;
+          id: string;
+          instructions: NonNullable<Json>;
+          locales: string[];
+          max_marks: number | null;
+          paper_id: string;
+          provenance: NonNullable<Json>;
+          published_at: string | null;
+          question_count: number | null;
+          status: string;
+          version_number: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          id?: string;
+          instructions?: NonNullable<Json>;
+          locales?: string[];
+          max_marks?: number | null;
+          paper_id: string;
+          provenance?: NonNullable<Json>;
+          published_at?: string | null;
+          question_count?: number | null;
+          status?: string;
+          version_number: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          instructions?: NonNullable<Json>;
+          locales?: string[];
+          max_marks?: number | null;
+          paper_id?: string;
+          provenance?: NonNullable<Json>;
+          published_at?: string | null;
+          question_count?: number | null;
+          status?: string;
+          version_number?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "paper_versions_paper_id_fkey";
+            columns: ["paper_id"];
+            isOneToOne: false;
+            referencedRelation: "papers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      papers: {
+        Row: {
+          administration: string;
+          created_at: string;
+          duration_seconds: number | null;
+          edition_id: string | null;
+          exam_date: string | null;
+          exam_id: string;
+          id: string;
+          instructions: NonNullable<Json>;
+          marks_correct: number;
+          marks_wrong: number;
+          max_marks: number | null;
+          paper_code: string | null;
+          paper_label: string | null;
+          published_at: string | null;
+          question_count: number | null;
+          session_label: string | null;
+          shift_label: string | null;
+          slug: string;
+          source_status: string;
+          stage_id: string | null;
+          status: string;
+          supported_types: string[];
+          updated_at: string;
+          year: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          administration?: string;
+          created_at?: string;
+          duration_seconds?: number | null;
+          edition_id?: string | null;
+          exam_date?: string | null;
+          exam_id: string;
+          id?: string;
+          instructions?: NonNullable<Json>;
+          marks_correct?: number;
+          marks_wrong?: number;
+          max_marks?: number | null;
+          paper_code?: string | null;
+          paper_label?: string | null;
+          published_at?: string | null;
+          question_count?: number | null;
+          session_label?: string | null;
+          shift_label?: string | null;
+          slug: string;
+          source_status?: string;
+          stage_id?: string | null;
+          status?: string;
+          supported_types?: string[];
+          updated_at?: string;
+          year: number;
+        };
+        Update: {
+          administration?: string;
+          created_at?: string;
+          duration_seconds?: number | null;
+          edition_id?: string | null;
+          exam_date?: string | null;
+          exam_id?: string;
+          id?: string;
+          instructions?: NonNullable<Json>;
+          marks_correct?: number;
+          marks_wrong?: number;
+          max_marks?: number | null;
+          paper_code?: string | null;
+          paper_label?: string | null;
+          published_at?: string | null;
+          question_count?: number | null;
+          session_label?: string | null;
+          shift_label?: string | null;
+          slug?: string;
+          source_status?: string;
+          stage_id?: string | null;
+          status?: string;
+          supported_types?: string[];
+          updated_at?: string;
+          year?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "papers_edition_id_fkey";
+            columns: ["edition_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_editions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "papers_exam_id_fkey";
+            columns: ["exam_id"];
+            isOneToOne: false;
+            referencedRelation: "exams";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "papers_stage_id_fkey";
+            columns: ["stage_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_stages";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      question_localizations: {
+        Row: {
+          current_version_id: string;
+          locale: string;
+          question_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          current_version_id: string;
+          locale: string;
+          question_id: string;
+        };
+        Update: {
+          current_version_id?: string;
+          locale?: string;
+          question_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "question_localizations_current_version_id_fkey";
+            columns: ["current_version_id"];
+            isOneToOne: false;
+            referencedRelation: "question_versions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "question_localizations_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "questions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       question_versions: {
         Row: {
           content_hash: string;
@@ -203,7 +880,9 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      exam_types_are_valid: { Args: { kinds: string[] }; Returns: boolean };
       options_are_valid: { Args: { correct_option_id: number; options: Json }; Returns: boolean };
+      slug_code: { Args: { value: string }; Returns: boolean };
     };
     Enums: {
       difficulty: "easy" | "medium" | "hard";
@@ -397,12 +1076,18 @@ export type Database = {
           create_key: string | null;
           created_at: string;
           current_position: number;
+          duration_seconds: number | null;
           expires_at: string | null;
           finished_at: string | null;
           id: string;
           lives: number | null;
+          locale: string;
+          marks_correct: number | null;
+          marks_wrong: number | null;
           mode: Database["public"]["Enums"]["attempt_mode"];
           owner_id: string;
+          paper_id: string | null;
+          paper_set_code: string | null;
           question_count: number;
           rules_version: number;
           score: number;
@@ -421,12 +1106,18 @@ export type Database = {
           create_key?: string | null;
           created_at?: string;
           current_position?: number;
+          duration_seconds?: number | null;
           expires_at?: string | null;
           finished_at?: string | null;
           id?: string;
           lives?: number | null;
+          locale?: string;
+          marks_correct?: number | null;
+          marks_wrong?: number | null;
           mode: Database["public"]["Enums"]["attempt_mode"];
           owner_id: string;
+          paper_id?: string | null;
+          paper_set_code?: string | null;
           question_count: number;
           rules_version?: number;
           score?: number;
@@ -444,12 +1135,18 @@ export type Database = {
           create_key?: string | null;
           created_at?: string;
           current_position?: number;
+          duration_seconds?: number | null;
           expires_at?: string | null;
           finished_at?: string | null;
           id?: string;
           lives?: number | null;
+          locale?: string;
+          marks_correct?: number | null;
+          marks_wrong?: number | null;
           mode?: Database["public"]["Enums"]["attempt_mode"];
           owner_id?: string;
+          paper_id?: string | null;
+          paper_set_code?: string | null;
           question_count?: number;
           rules_version?: number;
           score?: number;
@@ -759,6 +1456,18 @@ export type Database = {
         Returns: Json;
       };
       game_advance: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
+      game_answer_and_next: {
+        Args: {
+          p_action: string;
+          p_attempt_id: string;
+          p_idempotency_key: string;
+          p_mode: Database["public"]["Enums"]["attempt_mode"];
+          p_option_id: number;
+          p_owner: string;
+          p_position: number;
+        };
+        Returns: Json;
+      };
       game_attempt_review: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
       game_award_achievements: { Args: { p_owner: string }; Returns: Json };
       game_create_attempt: {
@@ -819,6 +1528,7 @@ export type Database = {
         Returns: Json;
       };
       game_daily_status: { Args: { p_owner: string }; Returns: Json };
+      game_delete_account: { Args: { p_owner: string }; Returns: Json };
       game_ensure_daily_challenge: {
         Args: { p_date?: string };
         Returns: {
@@ -841,6 +1551,7 @@ export type Database = {
       };
       game_ensure_profile: { Args: { p_display_name?: string; p_user: string }; Returns: Json };
       game_expire_attempt: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
+      game_export_account: { Args: { p_owner: string }; Returns: Json };
       game_finish: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
       game_list_bookmarks: {
         Args: { p_owner: string };
@@ -934,7 +1645,7 @@ export type Database = {
     Enums: {
       admin_role: "editor" | "admin";
       answer_action: "answer" | "skip" | "reveal" | "timeout";
-      attempt_mode: "classic" | "time_rush" | "practice" | "daily" | "survival";
+      attempt_mode: "classic" | "time_rush" | "practice" | "daily" | "survival" | "paper";
       attempt_status: "ready" | "active" | "completed" | "expired" | "abandoned";
       report_reason:
         "incorrect_answer" | "ambiguous" | "outdated" | "typo" | "inappropriate" | "other";
@@ -1058,7 +1769,7 @@ export const Constants = {
     Enums: {
       admin_role: ["editor", "admin"],
       answer_action: ["answer", "skip", "reveal", "timeout"],
-      attempt_mode: ["classic", "time_rush", "practice", "daily", "survival"],
+      attempt_mode: ["classic", "time_rush", "practice", "daily", "survival", "paper"],
       attempt_status: ["ready", "active", "completed", "expired", "abandoned"],
       report_reason: [
         "incorrect_answer",
