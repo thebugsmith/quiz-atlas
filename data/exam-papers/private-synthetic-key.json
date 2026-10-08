@@ -1,0 +1,22 @@
+{
+  "development_only": true,
+  "private_server_only": true,
+  "paper_external_id": "development-objective-paper-001",
+  "key_version": 1,
+  "items": {
+    "q1": { "accepted_option_ids": ["b"] },
+    "q2": { "correct_option_ids": ["a", "c"] },
+    "q3": {
+      "accepted_numeric_intervals": [
+        { "min": "12", "max": "12", "min_inclusive": true, "max_inclusive": true }
+      ]
+    },
+    "q4": {
+      "accepted_numeric_intervals": [
+        { "min": "1.41", "max": "1.42", "min_inclusive": true, "max_inclusive": true }
+      ]
+    },
+    "q5": { "accepted_option_ids": ["b"] },
+    "q6": { "exceptional_policy": "award_all" }
+  }
+}

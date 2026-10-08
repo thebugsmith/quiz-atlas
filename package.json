@@ -23,6 +23,7 @@
     "content:wipe": "tsx scripts/wipe-questions.ts",
     "db:snapshot": "bash scripts/db-snapshot.sh",
     "paper:import": "tsx scripts/import-paper.ts",
+    "exam:import": "tsx scripts/import-exam-paper.ts",
     "admin:grant": "tsx scripts/make-admin.ts",
     "daily:prepare": "tsx scripts/prepare-daily.ts",
     "content:report": "tsx scripts/content-report.ts",

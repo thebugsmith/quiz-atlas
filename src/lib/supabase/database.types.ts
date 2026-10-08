@@ -70,8 +70,168 @@ export type Database = {
           },
         ];
       };
+      exam_item_localizations: {
+        Row: {
+          current_version_id: string;
+          item_id: string;
+          locale: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          current_version_id: string;
+          item_id: string;
+          locale: string;
+        };
+        Update: {
+          current_version_id?: string;
+          item_id?: string;
+          locale?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_item_localizations_current_version_id_fkey";
+            columns: ["current_version_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_item_versions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exam_item_localizations_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      exam_item_versions: {
+        Row: {
+          content_hash: string;
+          created_at: string;
+          explanation: string | null;
+          id: string;
+          input_policy: Json | null;
+          item_id: string;
+          item_type: string;
+          locale: string;
+          options: NonNullable<Json>;
+          prompt: string;
+          version_number: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          content_hash: string;
+          created_at?: string;
+          explanation?: string | null;
+          id?: string;
+          input_policy?: Json | null;
+          item_id: string;
+          item_type: string;
+          locale?: string;
+          options?: NonNullable<Json>;
+          prompt: string;
+          version_number: number;
+        };
+        Update: {
+          content_hash?: string;
+          created_at?: string;
+          explanation?: string | null;
+          id?: string;
+          input_policy?: Json | null;
+          item_id?: string;
+          item_type?: string;
+          locale?: string;
+          options?: NonNullable<Json>;
+          prompt?: string;
+          version_number?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_item_versions_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      exam_items: {
+        Row: {
+          archived_at: string | null;
+          created_at: string;
+          external_id: string;
+          id: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          archived_at?: string | null;
+          created_at?: string;
+          external_id: string;
+          id?: string;
+          updated_at?: string;
+        };
+        Update: {
+          archived_at?: string | null;
+          created_at?: string;
+          external_id?: string;
+          id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      exam_key_items: {
+        Row: {
+          accepted_numeric_intervals: Json | null;
+          accepted_option_ids: string[] | null;
+          correct_option_ids: string[] | null;
+          exceptional_policy: string | null;
+          id: string;
+          item_version_id: string;
+          key_version_id: string;
+          paper_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          accepted_numeric_intervals?: Json | null;
+          accepted_option_ids?: string[] | null;
+          correct_option_ids?: string[] | null;
+          exceptional_policy?: string | null;
+          id?: string;
+          item_version_id: string;
+          key_version_id: string;
+          paper_id: string;
+        };
+        Update: {
+          accepted_numeric_intervals?: Json | null;
+          accepted_option_ids?: string[] | null;
+          correct_option_ids?: string[] | null;
+          exceptional_policy?: string | null;
+          id?: string;
+          item_version_id?: string;
+          key_version_id?: string;
+          paper_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_key_items_item_version_id_fkey";
+            columns: ["item_version_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_item_versions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exam_key_items_same_paper";
+            columns: ["key_version_id", "paper_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_key_versions";
+            referencedColumns: ["id", "paper_id"];
+          },
+        ];
+      };
       exam_key_versions: {
         Row: {
+          content_hash: string | null;
           created_at: string;
           id: string;
           paper_id: string;
@@ -82,6 +242,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          content_hash?: string | null;
           created_at?: string;
           id?: string;
           paper_id: string;
@@ -91,6 +252,7 @@ export type Database = {
           version_number: number;
         };
         Update: {
+          content_hash?: string | null;
           created_at?: string;
           id?: string;
           paper_id?: string;
@@ -105,6 +267,163 @@ export type Database = {
             columns: ["paper_id"];
             isOneToOne: false;
             referencedRelation: "papers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      exam_paper_items: {
+        Row: {
+          item_version_id: string;
+          marking: Json | null;
+          marks_correct: number | null;
+          marks_wrong: number | null;
+          paper_id: string;
+          position: number;
+          section_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          item_version_id: string;
+          marking?: Json | null;
+          marks_correct?: number | null;
+          marks_wrong?: number | null;
+          paper_id: string;
+          position: number;
+          section_id?: string | null;
+        };
+        Update: {
+          item_version_id?: string;
+          marking?: Json | null;
+          marks_correct?: number | null;
+          marks_wrong?: number | null;
+          paper_id?: string;
+          position?: number;
+          section_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_paper_items_item_version_id_fkey";
+            columns: ["item_version_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_item_versions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exam_paper_items_paper_id_fkey";
+            columns: ["paper_id"];
+            isOneToOne: false;
+            referencedRelation: "papers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exam_paper_items_section_id_fkey";
+            columns: ["section_id"];
+            isOneToOne: false;
+            referencedRelation: "paper_sections";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      exam_rule_versions: {
+        Row: {
+          choices: NonNullable<Json>;
+          content_hash: string | null;
+          created_at: string;
+          display: NonNullable<Json>;
+          id: string;
+          marking: NonNullable<Json>;
+          navigation: NonNullable<Json>;
+          paper_id: string;
+          published_at: string | null;
+          status: string;
+          timing: NonNullable<Json>;
+          version_number: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          choices?: NonNullable<Json>;
+          content_hash?: string | null;
+          created_at?: string;
+          display?: NonNullable<Json>;
+          id?: string;
+          marking: NonNullable<Json>;
+          navigation: NonNullable<Json>;
+          paper_id: string;
+          published_at?: string | null;
+          status?: string;
+          timing: NonNullable<Json>;
+          version_number: number;
+        };
+        Update: {
+          choices?: NonNullable<Json>;
+          content_hash?: string | null;
+          created_at?: string;
+          display?: NonNullable<Json>;
+          id?: string;
+          marking?: NonNullable<Json>;
+          navigation?: NonNullable<Json>;
+          paper_id?: string;
+          published_at?: string | null;
+          status?: string;
+          timing?: NonNullable<Json>;
+          version_number?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_rule_versions_paper_id_fkey";
+            columns: ["paper_id"];
+            isOneToOne: false;
+            referencedRelation: "papers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      exam_section_rules: {
+        Row: {
+          choices: Json | null;
+          marking: Json | null;
+          paper_id: string;
+          rule_version_id: string;
+          section_id: string;
+          timing: Json | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          choices?: Json | null;
+          marking?: Json | null;
+          paper_id: string;
+          rule_version_id: string;
+          section_id: string;
+          timing?: Json | null;
+        };
+        Update: {
+          choices?: Json | null;
+          marking?: Json | null;
+          paper_id?: string;
+          rule_version_id?: string;
+          section_id?: string;
+          timing?: Json | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_section_rules_rule_version_id_fkey";
+            columns: ["rule_version_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_rule_versions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exam_section_rules_same_paper";
+            columns: ["rule_version_id", "paper_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_rule_versions";
+            referencedColumns: ["id", "paper_id"];
+          },
+          {
+            foreignKeyName: "exam_section_rules_section_id_fkey";
+            columns: ["section_id"];
+            isOneToOne: false;
+            referencedRelation: "paper_sections";
             referencedColumns: ["id"];
           },
         ];
@@ -877,10 +1196,38 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      paper_manifest_items: {
+        Row: {
+          exam_options: Json | null;
+          input_policy: Json | null;
+          item_type: string | null;
+          item_version_id: string | null;
+          marking: Json | null;
+          paper_id: string | null;
+          position: number | null;
+          question_id: string | null;
+          section_id: string | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
     };
     Functions: {
+      exam_input_policy_is_valid: { Args: { p_input: Json; p_type: string }; Returns: boolean };
+      exam_options_are_valid: { Args: { p_options: Json; p_type: string }; Returns: boolean };
+      exam_rule_is_valid: {
+        Args: {
+          p_choices: Json;
+          p_display: Json;
+          p_marking: Json;
+          p_navigation: Json;
+          p_timing: Json;
+        };
+        Returns: boolean;
+      };
       exam_types_are_valid: { Args: { kinds: string[] }; Returns: boolean };
+      is_rational: { Args: { value: string }; Returns: boolean };
+      numeric_intervals_are_valid: { Args: { p_intervals: Json }; Returns: boolean };
       options_are_valid: { Args: { correct_option_id: number; options: Json }; Returns: boolean };
       slug_code: { Args: { value: string }; Returns: boolean };
     };
