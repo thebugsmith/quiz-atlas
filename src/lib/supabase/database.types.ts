@@ -1596,6 +1596,25 @@ export type Database = {
         };
         Relationships: [];
       };
+      exam_favorites: {
+        Row: {
+          created_at: string;
+          paper_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          paper_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          paper_id?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           created_at: string;
@@ -1796,6 +1815,13 @@ export type Database = {
       };
       admin_void_daily_challenge: {
         Args: { p_actor: string; p_date: string; p_reason: string };
+        Returns: Json;
+      };
+      exam_catalog: { Args: Record<PropertyKey, never>; Returns: Json };
+      exam_favorites_list: { Args: { p_owner: string }; Returns: Json };
+      exam_paper_detail: { Args: { p_slug: string }; Returns: Json };
+      exam_set_favorite: {
+        Args: { p_favorite: boolean; p_owner: string; p_slug: string };
         Returns: Json;
       };
       expire_stale_attempts: {
