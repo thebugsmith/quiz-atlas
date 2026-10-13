@@ -33,4 +33,8 @@ export const LIMITS = {
   /** Uploads and reports are cheap to repeat by accident and expensive to repeat on purpose. */
   import: { limit: 20, window: 3600 },
   report: { limit: 20, window: 3600 },
+  /** Autosave: a player editing quickly still needs headroom for retries. */
+  examSave: { limit: 600, window: 60 },
+  /** Opening a paper is not an attack surface; the margin covers rapid back-and-forth. */
+  examCreate: { limit: 40, window: 3600 },
 } as const;

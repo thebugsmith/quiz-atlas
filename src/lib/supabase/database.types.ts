@@ -1596,6 +1596,129 @@ export type Database = {
         };
         Relationships: [];
       };
+      exam_attempt_items: {
+        Row: {
+          attempt_id: string;
+          id: string;
+          input_policy: Json | null;
+          item_type: string;
+          item_version_id: string | null;
+          options: NonNullable<Json>;
+          position: number;
+          printed_number: number | null;
+          prompt: string;
+          question_id: string | null;
+          section_subject: string | null;
+          statements: string[];
+          stem: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          attempt_id: string;
+          id?: string;
+          input_policy?: Json | null;
+          item_type: string;
+          item_version_id?: string | null;
+          options?: NonNullable<Json>;
+          position: number;
+          printed_number?: number | null;
+          prompt: string;
+          question_id?: string | null;
+          section_subject?: string | null;
+          statements?: string[];
+          stem?: string | null;
+        };
+        Update: {
+          attempt_id?: string;
+          id?: string;
+          input_policy?: Json | null;
+          item_type?: string;
+          item_version_id?: string | null;
+          options?: NonNullable<Json>;
+          position?: number;
+          printed_number?: number | null;
+          prompt?: string;
+          question_id?: string | null;
+          section_subject?: string | null;
+          statements?: string[];
+          stem?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_attempt_items_attempt_id_fkey";
+            columns: ["attempt_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_attempts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      exam_attempts: {
+        Row: {
+          create_key: string;
+          created_at: string;
+          cursor_item_id: string | null;
+          deadline_at: string | null;
+          id: string;
+          key_version_id: string | null;
+          locale: string;
+          mode: Database["public"]["Enums"]["exam_attempt_mode"];
+          owner_id: string;
+          paper_id: string;
+          paper_version_id: string | null;
+          rule_version_id: string | null;
+          started_at: string | null;
+          state: Database["public"]["Enums"]["exam_attempt_state"];
+          submitted_at: string | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          create_key: string;
+          created_at?: string;
+          cursor_item_id?: string | null;
+          deadline_at?: string | null;
+          id?: string;
+          key_version_id?: string | null;
+          locale?: string;
+          mode: Database["public"]["Enums"]["exam_attempt_mode"];
+          owner_id: string;
+          paper_id: string;
+          paper_version_id?: string | null;
+          rule_version_id?: string | null;
+          started_at?: string | null;
+          state?: Database["public"]["Enums"]["exam_attempt_state"];
+          submitted_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          create_key?: string;
+          created_at?: string;
+          cursor_item_id?: string | null;
+          deadline_at?: string | null;
+          id?: string;
+          key_version_id?: string | null;
+          locale?: string;
+          mode?: Database["public"]["Enums"]["exam_attempt_mode"];
+          owner_id?: string;
+          paper_id?: string;
+          paper_version_id?: string | null;
+          rule_version_id?: string | null;
+          started_at?: string | null;
+          state?: Database["public"]["Enums"]["exam_attempt_state"];
+          submitted_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_attempts_cursor_fk";
+            columns: ["cursor_item_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_attempt_items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       exam_favorites: {
         Row: {
           created_at: string;
@@ -1614,6 +1737,94 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [];
+      };
+      exam_mutations: {
+        Row: {
+          attempt_id: string;
+          created_at: string;
+          mutation_key: string;
+          payload_hash: string;
+          result: NonNullable<Json>;
+        };
+        ComputedFields: never;
+        Insert: {
+          attempt_id: string;
+          created_at?: string;
+          mutation_key: string;
+          payload_hash: string;
+          result: NonNullable<Json>;
+        };
+        Update: {
+          attempt_id?: string;
+          created_at?: string;
+          mutation_key?: string;
+          payload_hash?: string;
+          result?: NonNullable<Json>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_mutations_attempt_id_fkey";
+            columns: ["attempt_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_attempts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      exam_responses: {
+        Row: {
+          attempt_id: string;
+          attempt_item_id: string;
+          checked_at: string | null;
+          first_unaided: Json | null;
+          marked: boolean;
+          response: Json | null;
+          revealed_at: string | null;
+          revision: number;
+          updated_at: string;
+          visited: boolean;
+        };
+        ComputedFields: never;
+        Insert: {
+          attempt_id: string;
+          attempt_item_id: string;
+          checked_at?: string | null;
+          first_unaided?: Json | null;
+          marked?: boolean;
+          response?: Json | null;
+          revealed_at?: string | null;
+          revision?: number;
+          updated_at?: string;
+          visited?: boolean;
+        };
+        Update: {
+          attempt_id?: string;
+          attempt_item_id?: string;
+          checked_at?: string | null;
+          first_unaided?: Json | null;
+          marked?: boolean;
+          response?: Json | null;
+          revealed_at?: string | null;
+          revision?: number;
+          updated_at?: string;
+          visited?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_responses_attempt_id_fkey";
+            columns: ["attempt_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_attempts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exam_responses_attempt_item_id_fkey";
+            columns: ["attempt_item_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_attempt_items";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       profiles: {
         Row: {
@@ -1817,11 +2028,47 @@ export type Database = {
         Args: { p_actor: string; p_date: string; p_reason: string };
         Returns: Json;
       };
+      exam_attempt_manifest: { Args: { p_attempt_id: string; p_owner: string }; Returns: Json };
       exam_catalog: { Args: Record<PropertyKey, never>; Returns: Json };
+      exam_create_or_resume: {
+        Args: {
+          p_allow_draft?: boolean;
+          p_create_key: string;
+          p_locale?: string;
+          p_mode: Database["public"]["Enums"]["exam_attempt_mode"];
+          p_owner: string;
+          p_paper_slug: string;
+        };
+        Returns: Json;
+      };
       exam_favorites_list: { Args: { p_owner: string }; Returns: Json };
+      exam_option_label: { Args: { p_index: number; p_style: string }; Returns: string };
       exam_paper_detail: { Args: { p_slug: string }; Returns: Json };
+      exam_response_is_valid: {
+        Args: { p_input: Json; p_item_type: string; p_options: Json; p_response: Json };
+        Returns: boolean;
+      };
+      exam_set_cursor: {
+        Args: { p_attempt_id: string; p_item_id: string; p_locale?: string; p_owner: string };
+        Returns: Json;
+      };
       exam_set_favorite: {
         Args: { p_favorite: boolean; p_owner: string; p_slug: string };
+        Returns: Json;
+      };
+      exam_set_marked: {
+        Args: { p_attempt_id: string; p_item_id: string; p_marked: boolean; p_owner: string };
+        Returns: Json;
+      };
+      exam_set_response: {
+        Args: {
+          p_attempt_id: string;
+          p_expected_revision: number;
+          p_item_id: string;
+          p_mutation_key: string;
+          p_owner: string;
+          p_response: Json;
+        };
         Returns: Json;
       };
       expire_stale_attempts: {
@@ -2020,6 +2267,8 @@ export type Database = {
       answer_action: "answer" | "skip" | "reveal" | "timeout";
       attempt_mode: "classic" | "time_rush" | "practice" | "daily" | "survival" | "paper";
       attempt_status: "ready" | "active" | "completed" | "expired" | "abandoned";
+      exam_attempt_mode: "study" | "timed";
+      exam_attempt_state: "ready" | "active" | "paused" | "submitted" | "expired" | "abandoned";
       report_reason:
         "incorrect_answer" | "ambiguous" | "outdated" | "typo" | "inappropriate" | "other";
       report_status: "open" | "resolved" | "dismissed";
@@ -2144,6 +2393,8 @@ export const Constants = {
       answer_action: ["answer", "skip", "reveal", "timeout"],
       attempt_mode: ["classic", "time_rush", "practice", "daily", "survival", "paper"],
       attempt_status: ["ready", "active", "completed", "expired", "abandoned"],
+      exam_attempt_mode: ["study", "timed"],
+      exam_attempt_state: ["ready", "active", "paused", "submitted", "expired", "abandoned"],
       report_reason: [
         "incorrect_answer",
         "ambiguous",
