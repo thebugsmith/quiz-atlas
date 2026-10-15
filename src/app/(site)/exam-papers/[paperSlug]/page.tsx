@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Clock, Info } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock, Info } from "lucide-react";
 import { Container } from "@/components/ui/container";
+import { ButtonLink } from "@/components/ui/button";
 import { Card, CardBody, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { examModeEnabled } from "@/features/exam/flags";
 import { formatDuration, getPaperDetail } from "@/features/exam/catalog";
 import { FavoriteButton } from "@/features/exam/favorite-button";
+import { StartPractice } from "@/features/exam/start-practice";
 import { getVerifiedUser } from "@/lib/supabase/server";
 import { rpc } from "@/features/quiz/api-helpers";
 
@@ -50,6 +52,25 @@ export default async function PaperPage({ params }: PageProps<"/exam-papers/[pap
   const favorites = user
     ? ((await rpc<string[]>("exam_favorites_list", { p_owner: user.id })).data ?? [])
     : [];
+
+  const open = user
+    ? (
+        await rpc<{
+          attempt_id: string;
+          answered: number;
+          total: number;
+          cursor_position: number | null;
+        }>("exam_open_attempt", { p_owner: user.id, p_paper_slug: paper.slug })
+      ).data
+    : null;
+
+  // A draft paper is startable only in development, and only when it is a synthetic
+  // fixture: the same rule the create function enforces.
+  const startable =
+    paper.status === "published" ||
+    (process.env.NODE_ENV !== "production" &&
+      process.env.EXAM_ALLOW_DRAFT === "1" &&
+      paper.source_status === "synthetic");
 
   return (
     <Container className="space-y-6">
@@ -195,12 +216,27 @@ export default async function PaperPage({ params }: PageProps<"/exam-papers/[pap
               Answer at your own pace. Every response is saved, so you can close the tab and come
               back to it. Checking an answer shows the explanation and is recorded as assisted.
             </CardBody>
-            <p className="text-muted-foreground mt-4 flex items-center gap-1.5 text-xs">
-              <Info className="size-3.5" aria-hidden="true" />
-              {published
-                ? "Opens with the attempt engine in this build."
-                : "This paper is still in review."}
-            </p>
+            {open ? (
+              <div className="mt-4">
+                <ButtonLink href={`/exam-attempts/${open.attempt_id}`} size="sm">
+                  Continue · {open.answered}/{open.total} answered
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </ButtonLink>
+                <p className="text-muted-foreground mt-2 text-xs">
+                  {open.cursor_position
+                    ? `You left off at question ${open.cursor_position}.`
+                    : "Your saved answers open where you left them."}
+                </p>
+              </div>
+            ) : (
+              <StartPractice paper={paper.slug} disabled={!startable} />
+            )}
+            {!startable ? (
+              <p className="text-muted-foreground mt-3 flex items-center gap-1.5 text-xs">
+                <Info className="size-3.5" aria-hidden="true" />
+                This paper is still in review.
+              </p>
+            ) : null}
           </Card>
 
           <Card>
@@ -217,9 +253,7 @@ export default async function PaperPage({ params }: PageProps<"/exam-papers/[pap
             </CardBody>
             <p className="text-muted-foreground mt-4 flex items-center gap-1.5 text-xs">
               <Info className="size-3.5" aria-hidden="true" />
-              {published
-                ? "Opens with the attempt engine in this build."
-                : "This paper is still in review."}
+              Timed papers open with the timer milestone.
             </p>
           </Card>
         </div>

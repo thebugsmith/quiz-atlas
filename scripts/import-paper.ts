@@ -47,6 +47,8 @@ type PaperFile = {
     marksCorrect?: number;
     marksWrong?: number;
     publish?: boolean;
+    /** How the content was established. Defaults to a reviewed reconstruction. */
+    sourceStatus?: "official_verified" | "reviewed_reconstruction" | "synthetic";
   };
   questions: Question[];
 };
@@ -155,13 +157,18 @@ async function main() {
     const { rows: paperRows } = await client.query<{ id: string }>(
       `insert into content.papers
          (exam_id, slug, year, exam_date, shift_label, paper_label, duration_seconds,
-          marks_correct, marks_wrong, status, published_at)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          marks_correct, marks_wrong, status, published_at, supported_types,
+          question_count, source_status)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, '{single_choice}',
+               $12, $13)
        on conflict (slug) do update set
          year = excluded.year, exam_date = excluded.exam_date, shift_label = excluded.shift_label,
          paper_label = excluded.paper_label, duration_seconds = excluded.duration_seconds,
          marks_correct = excluded.marks_correct, marks_wrong = excluded.marks_wrong,
-         status = excluded.status, published_at = excluded.published_at
+         status = excluded.status, published_at = excluded.published_at,
+         supported_types = excluded.supported_types,
+         question_count = excluded.question_count,
+         source_status = excluded.source_status
        returning id`,
       [
         examId,
@@ -175,6 +182,8 @@ async function main() {
         data.paper.marksWrong ?? 0,
         data.paper.publish ? "published" : "draft",
         data.paper.publish ? new Date() : null,
+        data.questions.length,
+        data.paper.sourceStatus ?? "reviewed_reconstruction",
       ],
     );
     const paperId = paperRows[0].id;
