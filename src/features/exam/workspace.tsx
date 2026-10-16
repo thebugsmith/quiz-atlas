@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Flag, Loader2, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { isAnswered, type Manifest, type ManifestItem, type ResponseValue } from "./manifest";
+import { clearOtherOwners, dropEdit, pendingFor, queueEdit } from "./outbox";
 
 type SaveState = "idle" | "saving" | "saved" | "error" | "offline";
 
@@ -28,6 +30,7 @@ const SAVE_LABEL: Record<SaveState, string> = {
  * silently keeping whichever request arrived last.
  */
 export function ExamWorkspace({ attemptId }: { attemptId: string }) {
+  const router = useRouter();
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
@@ -35,6 +38,8 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
   const [conflict, setConflict] = useState<Conflict | null>(null);
   const [numericDraft, setNumericDraft] = useState<Record<string, string>>({});
   const [numbersVisible, setNumbersVisible] = useState(true);
+  const [owner, setOwner] = useState<string | null>(null);
+  const [pending, setPending] = useState(0);
 
   const stateRef = useRef<Manifest | null>(null);
   const ackedRevision = useRef<Map<string, number>>(new Map());
@@ -71,6 +76,19 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/session", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : { user: null }))
+      .then((data: { user: { id: string } | null }) => {
+        if (!cancelled && data.user) setOwner(data.user.id);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const items = useMemo(() => manifest?.items ?? [], [manifest]);
   const item: ManifestItem | undefined = items[current];
 
@@ -87,6 +105,77 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
     });
   }, []);
 
+  /** Send one edit. Returns "saved", "conflict" or "offline". */
+  const sendEdit = useCallback(
+    async (
+      itemId: string,
+      value: ResponseValue | null,
+      baseRevision: number,
+      mutationKey: string,
+    ): Promise<"saved" | "conflict" | "offline"> => {
+      try {
+        const response = await fetch(`/api/exam-attempts/${attemptId}/responses/${itemId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            response: value,
+            expected_revision: baseRevision,
+            mutation_key: mutationKey,
+          }),
+        });
+
+        if (response.status === 409) {
+          const payload = (await response.json()) as { error?: string; current?: number };
+          if (payload.error === "stale_revision") {
+            const fresh = await fetch(`/api/exam-attempts/${attemptId}`, { cache: "no-store" });
+            if (fresh.ok) {
+              const server = (await fresh.json()) as Manifest;
+              const serverItem = server.items.find((entry) => entry.item_id === itemId);
+              ackedRevision.current.set(itemId, serverItem?.response?.revision ?? 0);
+              savedValue.current.set(itemId, JSON.stringify(serverItem?.response?.value ?? null));
+              setConflict({
+                itemId,
+                local: value,
+                saved: serverItem?.response?.value ?? null,
+              });
+              setSaveState("error");
+              return "conflict";
+            }
+          }
+          throw new Error("conflict");
+        }
+
+        if (!response.ok) throw new Error(String(response.status));
+
+        const ack = (await response.json()) as { revision: number; response: ResponseValue | null };
+        ackedRevision.current.set(itemId, ack.revision);
+        savedValue.current.set(itemId, JSON.stringify(ack.response ?? null));
+        updateItem(itemId, (entry) => ({
+          ...entry,
+          response: {
+            ...(entry.response ?? { checked: false, revealed: false, visited: true }),
+            value: ack.response,
+            revision: ack.revision,
+            visited: true,
+            marked: entry.response?.marked ?? false,
+          },
+        }));
+        setSaveState("saved");
+        return "saved";
+      } catch {
+        setSaveState(navigator.onLine ? "error" : "offline");
+        return "offline";
+      }
+    },
+    [attemptId, updateItem],
+  );
+
+  /** Keep the pending count honest: unsynced edits are not saved work. */
+  const refreshPending = useCallback(async () => {
+    if (!owner) return;
+    setPending((await pendingFor(owner, attemptId)).length);
+  }, [attemptId, owner]);
+
   /** Send the current intent for one item, serialised with any in-flight save. */
   const flush = useCallback(
     async (itemId: string) => {
@@ -99,60 +188,28 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
         if (savedValue.current.get(itemId) === intent) return;
 
         setSaveState("saving");
-        try {
-          const response = await fetch(`/api/exam-attempts/${attemptId}/responses/${itemId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              response: snapshot.response?.value ?? null,
-              expected_revision: ackedRevision.current.get(itemId) ?? 0,
-              mutation_key: crypto.randomUUID(),
-            }),
+        const baseRevision = ackedRevision.current.get(itemId) ?? 0;
+        const mutationKey = crypto.randomUUID();
+        const outcome = await sendEdit(
+          itemId,
+          snapshot.response?.value ?? null,
+          baseRevision,
+          mutationKey,
+        );
+
+        if (outcome === "offline" && owner) {
+          await queueEdit({
+            key: `${attemptId}:${itemId}`,
+            owner,
+            attemptId,
+            itemId,
+            value: snapshot.response?.value ?? null,
+            baseRevision,
+            mutationKey,
+            queuedAt: Date.now(),
           });
-
-          if (response.status === 409) {
-            const payload = (await response.json()) as { error?: string; current?: number };
-            if (payload.error === "stale_revision") {
-              const fresh = await fetch(`/api/exam-attempts/${attemptId}`, { cache: "no-store" });
-              if (fresh.ok) {
-                const server = (await fresh.json()) as Manifest;
-                const serverItem = server.items.find((entry) => entry.item_id === itemId);
-                ackedRevision.current.set(itemId, serverItem?.response?.revision ?? 0);
-                savedValue.current.set(itemId, JSON.stringify(serverItem?.response?.value ?? null));
-                setConflict({
-                  itemId,
-                  local: snapshot.response?.value ?? null,
-                  saved: serverItem?.response?.value ?? null,
-                });
-                setSaveState("error");
-                return;
-              }
-            }
-            throw new Error("conflict");
-          }
-
-          if (!response.ok) throw new Error(String(response.status));
-
-          const ack = (await response.json()) as {
-            revision: number;
-            response: ResponseValue | null;
-          };
-          ackedRevision.current.set(itemId, ack.revision);
-          savedValue.current.set(itemId, JSON.stringify(ack.response ?? null));
-          updateItem(itemId, (entry) => ({
-            ...entry,
-            response: {
-              ...(entry.response ?? { checked: false, revealed: false, visited: true }),
-              value: ack.response,
-              revision: ack.revision,
-              visited: true,
-              marked: entry.response?.marked ?? false,
-            },
-          }));
-          setSaveState("saved");
-        } catch {
-          setSaveState(navigator.onLine ? "error" : "offline");
         }
+        await refreshPending();
       });
 
       chain.current.set(
@@ -161,8 +218,32 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
       );
       await task;
     },
-    [attemptId, updateItem],
+    [attemptId, owner, refreshPending, sendEdit],
   );
+
+  /** Apply queued edits after a reconnect, but only on the revision they were based on. */
+  const flushOutbox = useCallback(async () => {
+    if (!owner || !navigator.onLine) return;
+    const entries = await pendingFor(owner, attemptId);
+    for (const entry of entries) {
+      const base = ackedRevision.current.get(entry.itemId) ?? 0;
+      if (base !== entry.baseRevision) {
+        // The item moved on while this edit waited: ask, do not overwrite.
+        setConflict({ itemId: entry.itemId, local: entry.value, saved: null });
+        await dropEdit(attemptId, entry.itemId);
+        continue;
+      }
+      const outcome = await sendEdit(
+        entry.itemId,
+        entry.value,
+        entry.baseRevision,
+        entry.mutationKey,
+      );
+      if (outcome !== "offline") await dropEdit(attemptId, entry.itemId);
+      if (outcome === "conflict") continue;
+    }
+    await refreshPending();
+  }, [attemptId, owner, refreshPending, sendEdit]);
 
   const applyResponse = useCallback(
     (value: ResponseValue | null) => {
@@ -246,6 +327,23 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
   );
 
   useEffect(() => {
+    if (!owner) return;
+    // Runs after the first await, so no state is set during the effect itself.
+    const prepare = async () => {
+      await clearOtherOwners(owner);
+      setPending((await pendingFor(owner, attemptId)).length);
+      await flushOutbox();
+    };
+    void prepare();
+  }, [attemptId, flushOutbox, owner]);
+
+  useEffect(() => {
+    const onOnline = () => void flushOutbox();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [flushOutbox]);
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLInputElement) return;
       if (event.key === "ArrowRight") goTo(Math.min(current + 1, items.length - 1));
@@ -319,14 +417,20 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
               )}
               aria-live="polite"
             >
-              {SAVE_LABEL[saveState]}
+              {pending > 0
+                ? `${pending} change${pending === 1 ? "" : "s"} on this device only`
+                : SAVE_LABEL[saveState]}
             </span>
-            <Link
-              href="/exams"
+            <button
+              type="button"
+              onClick={async () => {
+                await flushOutbox();
+                router.push("/exams");
+              }}
               className="border-border hover:bg-surface-muted inline-flex h-9 items-center rounded-[var(--radius-control)] border px-3 text-sm font-medium"
             >
               Save &amp; exit
-            </Link>
+            </button>
           </div>
         </div>
       </header>
