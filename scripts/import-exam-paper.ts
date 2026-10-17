@@ -172,6 +172,49 @@ async function write(client: PoolClient, paper: Manifest, key: PrivateKey) {
     sectionIds.set(entry.id, rows[0].id);
   }
 
+  const stimulusIds = new Map<string, string>();
+  for (const entry of paper.stimuli ?? []) {
+    const { rows: stimulusRows } = await client.query<{ id: string }>(
+      `insert into content.exam_stimuli (external_id, kind) values ($1, $2)
+       on conflict (external_id) do update set kind = excluded.kind
+       returning id`,
+      [entry.id, entry.kind],
+    );
+    const stimulusId = stimulusRows[0].id;
+    const body = { locale: "en", text: entry.text, media_path: entry.media_path ?? null };
+    const hash = fingerprint(body);
+
+    const { rows: existingStimulus } = await client.query<{ id: string; content_hash: string }>(
+      `select id, content_hash from content.exam_stimulus_versions
+        where stimulus_id = $1 and locale = 'en' order by version_number desc limit 1`,
+      [stimulusId],
+    );
+    let stimulusVersionId =
+      existingStimulus[0]?.content_hash === hash ? existingStimulus[0].id : null;
+    if (!stimulusVersionId) {
+      const { rows: next } = await client.query<{ n: number }>(
+        `select coalesce(max(version_number), 0) + 1 as n from content.exam_stimulus_versions
+          where stimulus_id = $1`,
+        [stimulusId],
+      );
+      const { rows: inserted } = await client.query<{ id: string }>(
+        `insert into content.exam_stimulus_versions
+           (stimulus_id, version_number, locale, body, media_path, content_hash)
+         values ($1, $2, 'en', $3, $4, $5)
+         returning id`,
+        [stimulusId, next[0].n, entry.text, entry.media_path ?? null, hash],
+      );
+      stimulusVersionId = inserted[0].id;
+    }
+    await client.query(
+      `insert into content.exam_stimulus_localizations (stimulus_id, locale, current_version_id)
+       values ($1, 'en', $2)
+       on conflict (stimulus_id, locale) do update set current_version_id = excluded.current_version_id`,
+      [stimulusId, stimulusVersionId],
+    );
+    stimulusIds.set(entry.id, stimulusId);
+  }
+
   const versionIds = new Map<string, string>();
   for (const item of paper.items) {
     const { rows: itemRows } = await client.query<{ id: string }>(
@@ -189,6 +232,8 @@ async function write(client: PoolClient, paper: Manifest, key: PrivateKey) {
       options: item.options ?? [],
       input_policy: item.input ?? null,
       explanation: item.explanation ?? null,
+      statements: item.statements ?? [],
+      stimulus_id: item.stimulus ? (stimulusIds.get(item.stimulus) ?? null) : null,
     };
     const hash = fingerprint(body);
 
@@ -208,8 +253,8 @@ async function write(client: PoolClient, paper: Manifest, key: PrivateKey) {
       const { rows: inserted } = await client.query<{ id: string }>(
         `insert into content.exam_item_versions
            (item_id, version_number, locale, item_type, prompt, options, input_policy,
-            explanation, content_hash)
-         values ($1, $2, 'en', $3, $4, $5::jsonb, $6::jsonb, $7, $8)
+            explanation, statements, stimulus_id, content_hash)
+         values ($1, $2, 'en', $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, $10)
          returning id`,
         [
           itemId,
@@ -219,6 +264,8 @@ async function write(client: PoolClient, paper: Manifest, key: PrivateKey) {
           JSON.stringify(item.options ?? []),
           item.input ? JSON.stringify(item.input) : null,
           item.explanation ?? null,
+          item.statements ?? [],
+          body.stimulus_id,
           hash,
         ],
       );

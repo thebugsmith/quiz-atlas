@@ -20,23 +20,46 @@
     "paper_label": "Objective engine test paper, not a PYQ",
     "administration": "regular",
     "duration_seconds": 600,
-    "supported_types": ["single_choice", "multiple_select", "numerical"],
+    "supported_types": [
+      "single_choice",
+      "multiple_select",
+      "numerical"
+    ],
     "status": "draft",
     "source_status": "synthetic"
   },
   "rule": {
-    "timing": { "kind": "whole_paper", "duration_seconds": 600 },
+    "timing": {
+      "kind": "whole_paper",
+      "duration_seconds": 600
+    },
     "marking": {
       "correct": "4",
       "incorrect": "-1",
       "unattempted": "0",
-      "partial": { "policy": "correct_subset_count", "points_by_count": { "1": "1" } }
+      "partial": {
+        "policy": "correct_subset_count",
+        "points_by_count": {
+          "1": "1"
+        }
+      }
     },
-    "navigation": { "kind": "free" },
+    "navigation": {
+      "kind": "free"
+    },
     "choices": {},
-    "display": { "rounding": "none", "places": 0 }
+    "display": {
+      "rounding": "none",
+      "places": 0
+    }
   },
-  "sections": [{ "id": "test-section", "title": "Synthetic examples", "position": 1 }],
+  "sections": [
+    {
+      "id": "test-section",
+      "title": "Synthetic examples",
+      "position": 1
+    }
+  ],
   "items": [
     {
       "item_id": "q1",
@@ -44,12 +67,32 @@
       "section": "test-section",
       "prompt": "Which number equals 2 + 2?",
       "options": [
-        { "id": "a", "text": "3" },
-        { "id": "b", "text": "4" },
-        { "id": "c", "text": "5" },
-        { "id": "d", "text": "6" }
+        {
+          "id": "a",
+          "text": "3"
+        },
+        {
+          "id": "b",
+          "text": "4"
+        },
+        {
+          "id": "c",
+          "text": "5"
+        },
+        {
+          "id": "d",
+          "text": "6"
+        }
       ],
-      "marking": { "correct": "4", "incorrect": "-1", "unattempted": "0" }
+      "marking": {
+        "correct": "4",
+        "incorrect": "-1",
+        "unattempted": "0"
+      },
+      "statements": [
+        "The number is even.",
+        "The number is greater than three."
+      ]
     },
     {
       "item_id": "q2",
@@ -57,28 +100,57 @@
       "section": "test-section",
       "prompt": "Select the even numbers.",
       "options": [
-        { "id": "a", "text": "2" },
-        { "id": "b", "text": "3" },
-        { "id": "c", "text": "4" },
-        { "id": "d", "text": "5" }
+        {
+          "id": "a",
+          "text": "2"
+        },
+        {
+          "id": "b",
+          "text": "3"
+        },
+        {
+          "id": "c",
+          "text": "4"
+        },
+        {
+          "id": "d",
+          "text": "5"
+        }
       ],
-      "marking": { "correct": "4", "incorrect": "-2", "unattempted": "0" }
+      "marking": {
+        "correct": "4",
+        "incorrect": "-2",
+        "unattempted": "0"
+      }
     },
     {
       "item_id": "q3",
       "type": "numerical",
       "section": "test-section",
-      "prompt": "Enter 3 × 4.",
-      "input": { "kind": "integer" },
-      "marking": { "correct": "4", "incorrect": "-1", "unattempted": "0" }
+      "prompt": "Enter 3 \u00d7 4.",
+      "input": {
+        "kind": "integer"
+      },
+      "marking": {
+        "correct": "4",
+        "incorrect": "-1",
+        "unattempted": "0"
+      }
     },
     {
       "item_id": "q4",
       "type": "numerical",
       "section": "test-section",
       "prompt": "Enter a decimal in the closed interval from 1.41 to 1.42.",
-      "input": { "kind": "decimal", "max_decimal_places": 2 },
-      "marking": { "correct": "2", "incorrect": "0", "unattempted": "0" }
+      "input": {
+        "kind": "decimal",
+        "max_decimal_places": 2
+      },
+      "marking": {
+        "correct": "2",
+        "incorrect": "0",
+        "unattempted": "0"
+      }
     },
     {
       "item_id": "q5",
@@ -86,12 +158,29 @@
       "section": "test-section",
       "prompt": "Which number is odd?",
       "options": [
-        { "id": "a", "text": "2" },
-        { "id": "b", "text": "3" },
-        { "id": "c", "text": "4" },
-        { "id": "d", "text": "6" }
+        {
+          "id": "a",
+          "text": "2"
+        },
+        {
+          "id": "b",
+          "text": "3"
+        },
+        {
+          "id": "c",
+          "text": "4"
+        },
+        {
+          "id": "d",
+          "text": "6"
+        }
       ],
-      "marking": { "correct": "2", "incorrect": "-2/3", "unattempted": "0" }
+      "marking": {
+        "correct": "2",
+        "incorrect": "-2/3",
+        "unattempted": "0"
+      },
+      "stimulus": "fixture-passage-1"
     },
     {
       "item_id": "q6",
@@ -99,12 +188,29 @@
       "section": "test-section",
       "prompt": "Synthetic withdrawn item used to test a bonus policy.",
       "options": [
-        { "id": "a", "text": "A" },
-        { "id": "b", "text": "B" },
-        { "id": "c", "text": "C" },
-        { "id": "d", "text": "D" }
+        {
+          "id": "a",
+          "text": "A"
+        },
+        {
+          "id": "b",
+          "text": "B"
+        },
+        {
+          "id": "c",
+          "text": "C"
+        },
+        {
+          "id": "d",
+          "text": "D"
+        }
       ],
-      "marking": { "correct": "4", "incorrect": "-1", "unattempted": "0" }
+      "marking": {
+        "correct": "4",
+        "incorrect": "-1",
+        "unattempted": "0"
+      },
+      "stimulus": "fixture-passage-1"
     }
   ],
   "source": {
@@ -112,5 +218,12 @@
     "rights_note": "Synthetic fixture written for this repository; not a previous-year paper.",
     "review_status": "verified"
   },
-  "private_key_file": "private-synthetic-key.json"
+  "private_key_file": "private-synthetic-key.json",
+  "stimuli": [
+    {
+      "id": "fixture-passage-1",
+      "kind": "passage",
+      "text": "Synthetic passage used to test the shared-stimulus layout. It has no subject matter beyond making sure a long block of text renders beside the question without pushing the page sideways on a phone."
+    }
+  ]
 }

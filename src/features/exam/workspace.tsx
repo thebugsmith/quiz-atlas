@@ -470,6 +470,9 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
               Previous
             </button>
             <p className="text-muted-foreground text-xs">
+              {manifest.rule?.choices?.max_questions
+                ? `Choose ${manifest.rule.choices.max_questions} · `
+                : ""}
               Question {item.position} of {manifest.items.length}
               {item.section ? ` · ${item.section}` : ""}
             </p>
@@ -485,15 +488,48 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
           </div>
 
           <article className="border-border bg-surface mt-3 rounded-[var(--radius-card)] border p-5 sm:p-6">
-            {item.stem ? <p className="text-muted-foreground mb-3 text-sm">{item.stem}</p> : null}
-            <h1 className="text-[17px] leading-relaxed font-medium">{item.prompt}</h1>
-            {item.statements.length > 0 ? (
-              <ol className="text-muted-foreground mt-3 list-decimal space-y-1 pl-5 text-sm">
-                {item.statements.map((statement) => (
-                  <li key={statement}>{statement}</li>
-                ))}
-              </ol>
-            ) : null}
+            {item.stimulus ? (
+              <div className="mb-4 grid gap-4 lg:grid-cols-2">
+                <div className="border-border bg-background/60 max-h-[28rem] overflow-auto rounded-[var(--radius-control)] border p-4 text-sm leading-relaxed whitespace-pre-line">
+                  <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
+                    {item.stimulus.kind === "passage" ? "Passage" : item.stimulus.kind}
+                  </p>
+                  {item.stimulus.body}
+                  {item.stimulus.media_path ? (
+                    <p className="text-muted-foreground mt-3 text-xs">
+                      This item refers to a figure.
+                    </p>
+                  ) : null}
+                </div>
+                <div>
+                  {item.stem ? (
+                    <p className="text-muted-foreground mb-3 text-sm">{item.stem}</p>
+                  ) : null}
+                  <h1 className="text-[17px] leading-relaxed font-medium">{item.prompt}</h1>
+                  {item.statements.length > 0 ? (
+                    <ol className="text-muted-foreground mt-3 list-decimal space-y-1 pl-5 text-sm">
+                      {item.statements.map((statement) => (
+                        <li key={statement}>{statement}</li>
+                      ))}
+                    </ol>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              <>
+                {item.stem ? (
+                  <p className="text-muted-foreground mb-3 text-sm">{item.stem}</p>
+                ) : null}
+                <h1 className="text-[17px] leading-relaxed font-medium">{item.prompt}</h1>
+                {item.statements.length > 0 ? (
+                  <ol className="text-muted-foreground mt-3 list-decimal space-y-1 pl-5 text-sm">
+                    {item.statements.map((statement) => (
+                      <li key={statement}>{statement}</li>
+                    ))}
+                  </ol>
+                ) : null}
+              </>
+            )}
 
             <div className="mt-5">
               {item.type === "single_choice" ? (

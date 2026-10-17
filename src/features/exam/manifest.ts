@@ -16,6 +16,26 @@ export type ResponseValue =
   | { kind: "multiple"; option_ids: string[] }
   | { kind: "numerical"; value: string | null };
 
+export type ManifestStimulus = {
+  kind: "passage" | "table" | "diagram" | "case";
+  body: string;
+  media_path: string | null;
+};
+
+export type ManifestRule = {
+  timing: { kind: "whole_paper" | "sections"; duration_seconds?: number };
+  marking: {
+    correct: string;
+    incorrect: string;
+    unattempted: string;
+    partial?: { policy: string };
+  };
+  navigation: { kind: "free" | "sequential" };
+  choices: { max_questions?: number };
+  display: { rounding: string; places: number };
+  version: number;
+};
+
 export type ManifestItem = {
   item_id: string;
   position: number;
@@ -26,6 +46,7 @@ export type ManifestItem = {
   statements: string[];
   options: ManifestOption[];
   input: { kind: "integer" | "decimal"; max_decimal_places?: number } | null;
+  stimulus: ManifestStimulus | null;
   response: SavedResponse | null;
 };
 
@@ -46,6 +67,7 @@ export type Manifest = {
     duration_seconds: number | null;
   };
   items: ManifestItem[];
+  rule: ManifestRule | null;
   answered: number;
   total: number;
 };

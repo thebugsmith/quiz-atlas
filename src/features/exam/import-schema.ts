@@ -43,6 +43,8 @@ export const manifestItem = z
       .strict()
       .optional(),
     explanation: z.string().trim().min(5).max(4000).optional(),
+    statements: z.array(z.string().trim().min(1).max(500)).max(8).optional(),
+    stimulus: z.string().min(1).max(120).optional(),
     marking: z
       .object({
         correct: rational.optional(),
@@ -217,6 +219,18 @@ export const manifest = z
       })
       .strict(),
     rule,
+    stimuli: z
+      .array(
+        z
+          .object({
+            id: z.string().min(1).max(120),
+            kind: z.enum(["passage", "table", "diagram", "case"]).default("passage"),
+            text: z.string().trim().min(1).max(8000),
+            media_path: z.string().max(400).optional(),
+          })
+          .strict(),
+      )
+      .optional(),
     sections: z.array(section).min(1),
     items: z.array(manifestItem).min(1),
     source: z
@@ -250,6 +264,17 @@ export const manifest = z
       sectionIds.add(entry.id);
     }
 
+    const stimuli = new Set((value.stimuli ?? []).map((entry) => entry.id));
+    for (const entry of value.stimuli ?? []) {
+      if (entry.kind !== "diagram" && entry.text.trim().length < 20) {
+        ctx.addIssue({
+          code: "custom",
+          message: "a passage shorter than 20 characters is probably a typo",
+          path: ["stimuli"],
+        });
+      }
+    }
+
     const itemIds = new Set<string>();
     for (const item of value.items) {
       if (itemIds.has(item.item_id)) {
@@ -264,6 +289,13 @@ export const manifest = z
         ctx.addIssue({
           code: "custom",
           message: `unknown section ${item.section}`,
+          path: ["items"],
+        });
+      }
+      if (item.stimulus && !stimuli.has(item.stimulus)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `unknown stimulus ${item.stimulus}`,
           path: ["items"],
         });
       }
