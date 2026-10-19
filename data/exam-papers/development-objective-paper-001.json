@@ -20,11 +20,7 @@
     "paper_label": "Objective engine test paper, not a PYQ",
     "administration": "regular",
     "duration_seconds": 600,
-    "supported_types": [
-      "single_choice",
-      "multiple_select",
-      "numerical"
-    ],
+    "supported_types": ["single_choice", "multiple_select", "numerical"],
     "status": "draft",
     "source_status": "synthetic"
   },
@@ -89,10 +85,7 @@
         "incorrect": "-1",
         "unattempted": "0"
       },
-      "statements": [
-        "The number is even.",
-        "The number is greater than three."
-      ]
+      "statements": ["The number is even.", "The number is greater than three."]
     },
     {
       "item_id": "q2",

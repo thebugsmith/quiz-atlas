@@ -40,6 +40,8 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
   const [numbersVisible, setNumbersVisible] = useState(true);
   const [owner, setOwner] = useState<string | null>(null);
   const [pending, setPending] = useState(0);
+  const [confirming, setConfirming] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const stateRef = useRef<Manifest | null>(null);
   const ackedRevision = useRef<Map<string, number>>(new Map());
@@ -423,6 +425,13 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
             </span>
             <button
               type="button"
+              onClick={() => setConfirming(true)}
+              className="bg-primary text-primary-foreground inline-flex h-9 items-center rounded-[var(--radius-control)] px-3 text-sm font-medium"
+            >
+              Finish paper
+            </button>
+            <button
+              type="button"
               onClick={async () => {
                 await flushOutbox();
                 router.push("/exams");
@@ -434,6 +443,53 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
           </div>
         </div>
       </header>
+
+      {confirming ? (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-4 sm:items-center">
+          <div className="bg-surface border-border w-full max-w-md rounded-[var(--radius-card)] border p-5">
+            <h2 className="text-lg font-semibold tracking-tight">Submit this paper?</h2>
+            <p className="text-muted-foreground mt-2 text-sm">
+              {answeredCount} answered · {manifest.items.length - answeredCount} unanswered ·{" "}
+              {markedCount} marked for review.
+            </p>
+            {pending > 0 ? (
+              <p className="text-warning mt-2 text-sm">
+                {pending} change{pending === 1 ? " is" : "s are"} still on this device. Reconnect
+                and save before submitting, or submit without them.
+              </p>
+            ) : null}
+            <p className="text-muted-foreground mt-2 text-sm">
+              Marks are calculated once. A submitted paper cannot be edited again.
+            </p>
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setConfirming(false)}>
+                Keep working
+              </Button>
+              <Button
+                size="sm"
+                disabled={submitting}
+                onClick={async () => {
+                  setSubmitting(true);
+                  try {
+                    const response = await fetch(`/api/exam-attempts/${attemptId}/submit`, {
+                      method: "POST",
+                    });
+                    if (!response.ok) throw new Error(String(response.status));
+                    router.push(`/exam-results/${attemptId}`);
+                  } catch {
+                    setSaveState("error");
+                    setConfirming(false);
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+              >
+                {submitting ? "Submitting" : "Submit and see result"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {conflict ? (
         <div className="border-warning bg-warning-soft mx-auto mt-3 flex max-w-[1200px] flex-wrap items-center gap-3 rounded-[var(--radius-card)] border px-4 py-3 text-sm">
