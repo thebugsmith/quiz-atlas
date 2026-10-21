@@ -24,7 +24,7 @@ export const responsePatch = z
 export const createAttempt = z
   .object({
     paper: z.string().min(1).max(120),
-    mode: z.literal("study"),
+    mode: z.enum(["study", "timed"]),
     create_key: z.string().min(8).max(100),
     locale: z
       .string()

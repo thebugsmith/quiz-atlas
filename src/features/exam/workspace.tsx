@@ -42,6 +42,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
   const [pending, setPending] = useState(0);
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [remaining, setRemaining] = useState<number | null>(null);
 
   const stateRef = useRef<Manifest | null>(null);
   const ackedRevision = useRef<Map<string, number>>(new Map());
@@ -340,6 +341,33 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
   }, [attemptId, flushOutbox, owner]);
 
   useEffect(() => {
+    if (!manifest?.deadline_at) return;
+    // Server time, not the browser's: the offset is applied once and the countdown then
+    // runs on a monotonic local interval, so changing the system clock does not help.
+    const offset = manifest.server_now ? Date.parse(manifest.server_now) - Date.now() : 0;
+    const deadline = Date.parse(manifest.deadline_at);
+    const tick = () =>
+      setRemaining(Math.max(0, Math.floor((deadline - (Date.now() + offset)) / 1000)));
+    // First tick on the next macrotask: no state is set during the effect itself.
+    const first = setTimeout(tick, 0);
+    const timer = setInterval(tick, 1000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(timer);
+    };
+  }, [manifest?.deadline_at, manifest?.server_now]);
+
+  useEffect(() => {
+    if (remaining !== 0 || !manifest || manifest.mode !== "timed" || manifest.state !== "active")
+      return;
+    const close = async () => {
+      await fetch(`/api/exam-attempts/${attemptId}/submit`, { method: "POST" });
+      router.push(`/exam-results/${attemptId}`);
+    };
+    void close();
+  }, [attemptId, manifest, remaining, router]);
+
+  useEffect(() => {
     const onOnline = () => void flushOutbox();
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
@@ -405,8 +433,11 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
               {manifest.paper.label ?? manifest.paper.slug}
             </p>
             <p className="text-muted-foreground text-xs">
-              Untimed practice · {answeredCount} of {manifest.items.length} answered · {markedCount}{" "}
-              marked
+              {manifest.mode === "timed" ? "Timed paper" : "Untimed practice"} · {answeredCount} of{" "}
+              {manifest.items.length} answered · {markedCount} marked
+              {remaining !== null
+                ? ` · ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")} left`
+                : ""}
             </p>
           </div>
           <div className="flex items-center gap-3">

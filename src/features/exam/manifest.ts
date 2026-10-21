@@ -58,6 +58,7 @@ export type Manifest = {
   cursor_item_id: string | null;
   started_at: string | null;
   deadline_at: string | null;
+  server_now: string | null;
   paper: {
     slug: string;
     label: string | null;

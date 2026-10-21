@@ -28,17 +28,25 @@ export async function POST(request: Request) {
     return gameJson({ error: "rate_limited", resetAt: budget.resetAt }, 429);
   }
 
-  const { data, error } = await rpc<{ attempt_id: string; created: boolean; state: string }>(
-    "exam_create_or_resume",
-    {
-      p_owner: user.id,
-      p_paper_slug: parsed.data.paper,
-      p_mode: parsed.data.mode,
-      p_create_key: parsed.data.create_key,
-      p_locale: parsed.data.locale ?? "en",
-      p_allow_draft: process.env.EXAM_ALLOW_DRAFT === "1",
-    },
-  );
+  const timed = parsed.data.mode === "timed";
+  const { data, error } = timed
+    ? await rpc<{ attempt_id: string; created: boolean; state: string }>(
+        "exam_create_timed_attempt",
+        {
+          p_owner: user.id,
+          p_paper_slug: parsed.data.paper,
+          p_create_key: parsed.data.create_key,
+          p_locale: parsed.data.locale ?? "en",
+        },
+      )
+    : await rpc<{ attempt_id: string; created: boolean; state: string }>("exam_create_or_resume", {
+        p_owner: user.id,
+        p_paper_slug: parsed.data.paper,
+        p_mode: parsed.data.mode,
+        p_create_key: parsed.data.create_key,
+        p_locale: parsed.data.locale ?? "en",
+        p_allow_draft: process.env.EXAM_ALLOW_DRAFT === "1",
+      });
 
   if (error) {
     return examError(error) ?? gameJson({ error: "failed" }, 500);

@@ -10,7 +10,17 @@ import { Button } from "@/components/ui/button";
  * navigates to it. The create key is generated per click, so a double click cannot make a
  * second attempt (and the database refuses one anyway).
  */
-export function StartPractice({ paper, disabled }: { paper: string; disabled?: boolean }) {
+export function StartPractice({
+  paper,
+  mode = "study",
+  disabled,
+  label = mode === "timed" ? "Start timed paper" : "Start untimed practice",
+}: {
+  paper: string;
+  mode?: "study" | "timed";
+  disabled?: boolean;
+  label?: string;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,11 +32,7 @@ export function StartPractice({ paper, disabled }: { paper: string; disabled?: b
       const response = await fetch("/api/exam-attempts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          paper,
-          mode: "study",
-          create_key: crypto.randomUUID(),
-        }),
+        body: JSON.stringify({ paper, mode, create_key: crypto.randomUUID() }),
       });
       if (response.status === 401) {
         setError("Sign in, or start a guest session, to keep your progress.");
@@ -54,7 +60,7 @@ export function StartPractice({ paper, disabled }: { paper: string; disabled?: b
     <div className="mt-4">
       <Button onClick={() => void start()} disabled={busy || disabled} size="sm">
         {busy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
-        Start untimed practice
+        {label}
         <ArrowRight className="size-4" aria-hidden="true" />
       </Button>
       {error ? <p className="text-warning mt-2 text-xs">{error}</p> : null}

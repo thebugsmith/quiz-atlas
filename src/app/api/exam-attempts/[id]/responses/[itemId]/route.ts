@@ -37,5 +37,8 @@ export async function PATCH(
   });
 
   if (error) return examError(error) ?? gameJson({ error: "failed" }, 500);
+  if (data && typeof data === "object" && "error" in data && data.error === "deadline_passed") {
+    return gameJson({ error: "deadline_passed", state: "submitted" }, 409);
+  }
   return gameJson(data);
 }
