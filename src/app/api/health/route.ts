@@ -11,10 +11,14 @@ export async function GET() {
   const sweep = await rpc<{ finalized: number; failed: number }>("exam_finalize_expired", {});
 
   const { ok, checks } = await runHealthChecks();
-  const payload = { ...checks, exam_expiry: sweep.data ?? { finalized: 0, failed: 0 } };
 
   return NextResponse.json(
-    { ok, checks: payload, ts: new Date().toISOString() },
+    {
+      ok,
+      checks,
+      exam_expiry: sweep.data ?? { finalized: 0, failed: 0 },
+      ts: new Date().toISOString(),
+    },
     { status: ok ? 200 : 503, headers: { "Cache-Control": "no-store" } },
   );
 }
