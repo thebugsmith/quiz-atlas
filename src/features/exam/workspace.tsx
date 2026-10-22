@@ -43,6 +43,15 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<{
+    itemId: string;
+    status: string;
+    award: string;
+    explanation: string | null;
+  } | null>(null);
+  const [note, setNote] = useState("");
+  const [noteState, setNoteState] = useState<"idle" | "saving" | "saved">("idle");
+  const [bookmarked, setBookmarked] = useState(false);
 
   const stateRef = useRef<Manifest | null>(null);
   const ackedRevision = useRef<Map<string, number>>(new Map());
@@ -272,6 +281,10 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
       const target = items[index];
       if (!target) return;
       setCurrent(index);
+      setFeedback(null);
+      setNoteState("idle");
+      setNote("");
+      setBookmarked(false);
       setNumericDraft((draft) => ({ ...draft, [target.item_id]: "" }));
       void fetch(`/api/exam-attempts/${attemptId}/cursor`, {
         method: "PATCH",
@@ -780,6 +793,69 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
                 <RotateCcw className="size-4" aria-hidden="true" />
                 Clear response
               </Button>
+              {manifest.mode === "study" ? (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={!isAnswered(item)}
+                    onClick={async () => {
+                      const response = await fetch(`/api/exam-attempts/${attemptId}/check`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ item_id: item.item_id }),
+                      });
+                      if (!response.ok) return;
+                      const data = (await response.json()) as {
+                        status: string;
+                        award: string;
+                        explanation: string | null;
+                      };
+                      setFeedback({ itemId: item.item_id, ...data });
+                    }}
+                  >
+                    Check answer
+                  </Button>
+                  <Button
+                    variant="quiet"
+                    size="sm"
+                    onClick={async () => {
+                      const response = await fetch(`/api/exam-attempts/${attemptId}/reveal`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ item_id: item.item_id }),
+                      });
+                      if (!response.ok) return;
+                      const data = (await response.json()) as { explanation: string | null };
+                      setFeedback({
+                        itemId: item.item_id,
+                        status: "revealed",
+                        award: "",
+                        explanation: data.explanation,
+                      });
+                    }}
+                  >
+                    Show explanation
+                  </Button>
+                </>
+              ) : null}
+              <Button
+                variant="quiet"
+                size="sm"
+                aria-pressed={bookmarked}
+                onClick={async () => {
+                  const next = !bookmarked;
+                  setBookmarked(next);
+                  const response = await fetch(`/api/exam-attempts/${attemptId}/bookmarks`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ item_id: item.item_id, on: next }),
+                  });
+                  if (!response.ok) setBookmarked(!next);
+                }}
+              >
+                {bookmarked ? "Bookmarked" : "Bookmark"}
+              </Button>
               <span className="text-muted-foreground ml-auto flex items-center gap-1 text-xs">
                 {isAnswered(item) ? (
                   <>
@@ -791,9 +867,79 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
               </span>
             </div>
 
+            {feedback && feedback.itemId === item.item_id ? (
+              <div
+                className={cn(
+                  "mt-4 rounded-[var(--radius-control)] border px-4 py-3 text-sm",
+                  feedback.status === "correct"
+                    ? "border-success/40 bg-success-soft"
+                    : feedback.status === "partial"
+                      ? "border-primary/40 bg-primary-soft"
+                      : feedback.status === "revealed"
+                        ? "border-border bg-surface-muted"
+                        : "border-warning/40 bg-warning-soft",
+                )}
+                role="status"
+              >
+                <p className="font-medium">
+                  {feedback.status === "correct"
+                    ? `Correct (+${feedback.award})`
+                    : feedback.status === "partial"
+                      ? `Partially correct (+${feedback.award})`
+                      : feedback.status === "incorrect"
+                        ? `Incorrect (${feedback.award})`
+                        : "Explanation"}
+                </p>
+                {feedback.explanation ? (
+                  <p className="text-muted-foreground mt-1">{feedback.explanation}</p>
+                ) : (
+                  <p className="text-muted-foreground mt-1">
+                    No explanation was printed with this item.
+                  </p>
+                )}
+                <p className="text-muted-foreground mt-2 text-xs">
+                  Checking records your first unaided answer and is shown as assisted practice.
+                </p>
+              </div>
+            ) : null}
+
+            <details className="border-border mt-4 border-t pt-3">
+              <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-sm">
+                Private note
+              </summary>
+              <div className="mt-2">
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  rows={3}
+                  placeholder="Only you can see this."
+                  className="border-border bg-background w-full rounded-[var(--radius-control)] border px-3 py-2 text-sm"
+                />
+                <div className="mt-2 flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={async () => {
+                      setNoteState("saving");
+                      const response = await fetch(`/api/exam-attempts/${attemptId}/notes`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ item_id: item.item_id, body: note }),
+                      });
+                      setNoteState(response.ok ? "saved" : "idle");
+                    }}
+                  >
+                    Save note
+                  </Button>
+                  <span className="text-muted-foreground text-xs">
+                    {noteState === "saving" ? "Saving" : noteState === "saved" ? "Saved" : ""}
+                  </span>
+                </div>
+              </div>
+            </details>
+
             <p className="text-muted-foreground border-border mt-4 border-t pt-3 text-xs">
-              Checking answers and explanations open in the next milestone. This workspace only
-              records what you choose.
+              Marks and explanations stay hidden until submission in a timed paper.
             </p>
           </article>
         </main>
