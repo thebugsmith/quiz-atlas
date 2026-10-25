@@ -53,6 +53,24 @@ export default async function PaperPage({ params }: PageProps<"/exam-papers/[pap
     ? ((await rpc<string[]>("exam_favorites_list", { p_owner: user.id })).data ?? [])
     : [];
 
+  const history = user
+    ? ((
+        await rpc<
+          {
+            attempt_id: string;
+            mode: string;
+            state: string;
+            started_at: string;
+            submitted_at: string | null;
+            answered: number;
+            total: number;
+            total_exact: string | null;
+            total_display: number | string | null;
+          }[]
+        >("exam_paper_attempts", { p_owner: user.id, p_paper_slug: paper.slug })
+      ).data ?? [])
+    : [];
+
   const open = user
     ? (
         await rpc<{
@@ -262,6 +280,49 @@ export default async function PaperPage({ params }: PageProps<"/exam-papers/[pap
           </Card>
         </div>
       </section>
+
+      {history.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold tracking-tight">Your attempts</h2>
+          <ul className="space-y-2">
+            {history.map((entry) => (
+              <li
+                key={entry.attempt_id}
+                className="border-border bg-surface flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-card)] border px-4 py-3 text-sm"
+              >
+                <span className="text-muted-foreground">
+                  {new Date(entry.started_at).toLocaleString()} · {entry.mode}
+                </span>
+                {entry.state === "submitted" ? (
+                  <span className="flex items-center gap-3">
+                    <span className="font-medium">
+                      Marks {entry.total_display ?? entry.total_exact}
+                    </span>
+                    <ButtonLink
+                      href={`/exam-results/${entry.attempt_id}`}
+                      variant="secondary"
+                      size="sm"
+                    >
+                      See result
+                    </ButtonLink>
+                  </span>
+                ) : entry.state === "active" ? (
+                  <span className="flex items-center gap-3">
+                    <span className="text-muted-foreground">
+                      {entry.answered}/{entry.total} answered
+                    </span>
+                    <ButtonLink href={`/exam-attempts/${entry.attempt_id}`} size="sm">
+                      Continue
+                    </ButtonLink>
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">{entry.state}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </Container>
   );
 }
