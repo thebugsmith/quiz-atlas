@@ -580,7 +580,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
               {manifest.rule?.choices?.max_questions
                 ? `Choose ${manifest.rule.choices.max_questions} · `
                 : ""}
-              Question {item.position} of {manifest.items.length}
+              Question {current + 1} of {manifest.items.length}
               {item.section ? ` · ${item.section}` : ""}
             </p>
             <button
@@ -986,7 +986,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
                         onClick={() => goTo(index)}
                         aria-current={index === current ? "true" : undefined}
                         aria-label={[
-                          `Question ${entry.position}`,
+                          `Question ${index + 1}`,
                           answered ? "answered" : "not answered",
                           marked ? "marked for review" : null,
                           index === current ? "current" : null,
@@ -1002,7 +1002,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
                           index === current && "ring-primary ring-2 ring-offset-1",
                         )}
                       >
-                        {entry.position}
+                        {index + 1}
                         {marked ? (
                           <span className="bg-warning absolute -top-1 -right-1 size-2 rounded-full" />
                         ) : null}
