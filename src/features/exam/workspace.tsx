@@ -439,6 +439,12 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
 
   return (
     <div className="min-h-dvh">
+      <a
+        href="#question"
+        className="focus:bg-surface sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow"
+      >
+        Skip to the question
+      </a>
       <header className="border-border bg-background/95 sticky top-0 z-20 border-b backdrop-blur">
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2.5">
           <div className="min-w-0">
@@ -462,6 +468,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
                   : "text-muted-foreground",
               )}
               aria-live="polite"
+              role="status"
             >
               {pending > 0
                 ? `${pending} change${pending === 1 ? "" : "s"} on this device only`
@@ -558,7 +565,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
       ) : null}
 
       <div className="mx-auto grid max-w-[1200px] gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <main>
+        <main id="question">
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
@@ -957,13 +964,17 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
             </span>
           </button>
 
-          <div className={cn("mt-3 lg:mt-0", !numbersVisible && "hidden lg:block")}>
+          <div
+            className={cn("mt-3 lg:mt-0", !numbersVisible && "hidden lg:block")}
+            role="region"
+            aria-label="Question palette"
+          >
             {sections.map(([section, indexes]) => (
               <div key={section} className="mb-4">
                 <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
                   {section}
                 </p>
-                <div className="grid grid-cols-8 gap-1.5 lg:grid-cols-6">
+                <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8 lg:grid-cols-6">
                   {indexes.map((index) => {
                     const entry = items[index];
                     const answered = isAnswered(entry);
@@ -983,7 +994,8 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
                           .filter(Boolean)
                           .join(", ")}
                         className={cn(
-                          "relative flex h-9 items-center justify-center rounded-md border text-xs font-medium",
+                          "relative flex h-10 items-center justify-center rounded-md border text-xs font-medium",
+                          "focus-visible:outline-2 focus-visible:outline-offset-2",
                           answered
                             ? "bg-primary text-primary-foreground border-transparent"
                             : "border-border bg-surface text-muted-foreground",
@@ -1001,7 +1013,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
               </div>
             ))}
 
-            <ul className="text-muted-foreground mt-2 space-y-1 text-xs">
+            <ul id="palette-help" className="text-muted-foreground mt-2 space-y-1 text-xs">
               <li className="flex items-center gap-2">
                 <span className="bg-primary inline-block size-3 rounded-sm" /> Answered
               </li>
