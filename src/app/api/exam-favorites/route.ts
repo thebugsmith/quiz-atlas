@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getVerifiedUser } from "@/lib/supabase/server";
 import { gameJson, mapDatabaseError, rpc, unauthenticated } from "@/features/quiz/api-helpers";
+import { examApiHidden } from "@/features/exam/api";
 
 /** Favorites are private to the signed-in player; guests have nowhere to keep them. */
 export async function GET() {
+  const hidden = examApiHidden();
+  if (hidden) return hidden;
+
   const user = await getVerifiedUser();
   if (!user) return unauthenticated();
 
@@ -16,6 +20,9 @@ export async function GET() {
 const body = z.object({ paper: z.string().min(1).max(120), favorite: z.boolean() });
 
 export async function POST(request: Request) {
+  const hidden = examApiHidden();
+  if (hidden) return hidden;
+
   const user = await getVerifiedUser();
   if (!user) return unauthenticated();
 

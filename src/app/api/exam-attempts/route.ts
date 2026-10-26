@@ -1,5 +1,5 @@
 import { createAttempt } from "@/features/exam/request-schemas";
-import { examError } from "@/features/exam/api";
+import { examApiHidden, examError } from "@/features/exam/api";
 import { gameJson, requireUser, rpc, unauthenticated } from "@/features/quiz/api-helpers";
 import { consume, LIMITS } from "@/features/ops/limits";
 
@@ -13,6 +13,9 @@ const ROUTE = "POST /api/exam-attempts";
  * fixtures (development only).
  */
 export async function POST(request: Request) {
+  const hidden = examApiHidden();
+  if (hidden) return hidden;
+
   const user = await requireUser();
   if (!user) return unauthenticated();
 

@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/features/admin/guard";
+import { examApiHidden } from "@/features/exam/api";
 import { rpc } from "@/features/quiz/api-helpers";
 
 /** Paper readiness for the review screen: items, keyed items, key and rule versions. */
 export async function GET() {
+  const hidden = examApiHidden();
+  if (hidden) return hidden;
+
   const actor = await requireAdmin();
   if (actor instanceof NextResponse) return actor;
 

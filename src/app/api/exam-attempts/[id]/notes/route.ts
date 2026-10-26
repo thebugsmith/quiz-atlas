@@ -1,11 +1,14 @@
 import { z } from "zod";
-import { examError } from "@/features/exam/api";
+import { examApiHidden, examError } from "@/features/exam/api";
 import { gameJson, requireUser, rpc, unauthenticated } from "@/features/quiz/api-helpers";
 
 const body = z.object({ item_id: z.string().uuid(), body: z.string().max(4000) }).strict();
 
 /** Private notes never leave the owner's attempt; an empty body clears the note. */
 export async function PUT(request: Request, ctx: { params: Promise<{ id: string }> }) {
+  const hidden = examApiHidden();
+  if (hidden) return hidden;
+
   const user = await requireUser();
   if (!user) return unauthenticated();
 
@@ -25,6 +28,9 @@ export async function PUT(request: Request, ctx: { params: Promise<{ id: string 
 }
 
 export async function GET(_request: Request, ctx: { params: Promise<{ id: string }> }) {
+  const hidden = examApiHidden();
+  if (hidden) return hidden;
+
   const user = await requireUser();
   if (!user) return unauthenticated();
 

@@ -1,11 +1,14 @@
 import { z } from "zod";
-import { examError } from "@/features/exam/api";
+import { examApiHidden, examError } from "@/features/exam/api";
 import { gameJson, requireUser, rpc, unauthenticated } from "@/features/quiz/api-helpers";
 
 const body = z.object({ item_id: z.string().uuid() }).strict();
 
 /** Study-only feedback. Marks the attempt's answer and keeps the first unaided response. */
 export async function POST(request: Request, ctx: { params: Promise<{ id: string }> }) {
+  const hidden = examApiHidden();
+  if (hidden) return hidden;
+
   const user = await requireUser();
   if (!user) return unauthenticated();
 

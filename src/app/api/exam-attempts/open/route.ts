@@ -1,8 +1,11 @@
-import { examError } from "@/features/exam/api";
+import { examApiHidden, examError } from "@/features/exam/api";
 import { gameJson, requireUser, rpc, unauthenticated } from "@/features/quiz/api-helpers";
 
 /** GET /api/exam-attempts?paper=<slug>: the resumable study attempt, or null. */
 export async function GET(request: Request) {
+  const hidden = examApiHidden();
+  if (hidden) return hidden;
+
   const user = await requireUser();
   if (!user) return unauthenticated();
 
