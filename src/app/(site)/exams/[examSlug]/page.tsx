@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Card, CardBody } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { examModeEnabled } from "@/features/exam/flags";
 import { getExamCatalog } from "@/features/exam/catalog";
 import { PaperCard } from "@/features/exam/paper-card";
 
@@ -19,7 +18,6 @@ export const metadata = {
 /** One exam: its cycles, then its papers grouped by stage, newest first. * Content changes on import, not on deploy, so the catalog is read per request.
  */
 export default async function ExamPage({ params }: PageProps<"/exams/[examSlug]">) {
-  if (!examModeEnabled) notFound();
   const { examSlug } = await params;
   const exams = await getExamCatalog();
   const exam = exams.find((entry) => entry.slug === examSlug);

@@ -1,5 +1,5 @@
 import { responsePatch } from "@/features/exam/request-schemas";
-import { examApiHidden, examError } from "@/features/exam/api";
+import { examError } from "@/features/exam/api";
 import { gameJson, requireUser, rpc, unauthenticated } from "@/features/quiz/api-helpers";
 import { consume, LIMITS } from "@/features/ops/limits";
 
@@ -11,9 +11,6 @@ export async function PATCH(
   request: Request,
   ctx: { params: Promise<{ id: string; itemId: string }> },
 ) {
-  const hidden = examApiHidden();
-  if (hidden) return hidden;
-
   const user = await requireUser();
   if (!user) return unauthenticated();
 

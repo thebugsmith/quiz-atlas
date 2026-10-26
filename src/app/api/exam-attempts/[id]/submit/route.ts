@@ -1,11 +1,8 @@
-import { examApiHidden, examError } from "@/features/exam/api";
+import { examError } from "@/features/exam/api";
 import { gameJson, requireUser, rpc, unauthenticated } from "@/features/quiz/api-helpers";
 
 /** Submit once. The database is idempotent, so a retried request cannot grade twice. */
 export async function POST(_request: Request, ctx: { params: Promise<{ id: string }> }) {
-  const hidden = examApiHidden();
-  if (hidden) return hidden;
-
   const user = await requireUser();
   if (!user) return unauthenticated();
 

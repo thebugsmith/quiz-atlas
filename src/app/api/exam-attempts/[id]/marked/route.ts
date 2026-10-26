@@ -1,12 +1,9 @@
 import { markedPatch } from "@/features/exam/request-schemas";
-import { examApiHidden, examError } from "@/features/exam/api";
+import { examError } from "@/features/exam/api";
 import { gameJson, requireUser, rpc, unauthenticated } from "@/features/quiz/api-helpers";
 
 /** Mark for review, kept apart from the answer so a flag never rewrites a response. */
 export async function POST(request: Request, ctx: { params: Promise<{ id: string }> }) {
-  const hidden = examApiHidden();
-  if (hidden) return hidden;
-
   const user = await requireUser();
   if (!user) return unauthenticated();
 

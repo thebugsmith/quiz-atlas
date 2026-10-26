@@ -4,7 +4,6 @@ import { ArrowLeft, CheckCircle2, MinusCircle, XCircle } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Card, CardBody, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { examModeEnabled } from "@/features/exam/flags";
 import { getVerifiedUser } from "@/lib/supabase/server";
 import { rpc } from "@/features/quiz/api-helpers";
 import type { Manifest, ManifestItem } from "@/features/exam/manifest";
@@ -109,8 +108,6 @@ function keyText(item: ResultItem, manifestItem: ManifestItem | undefined): stri
 
 /** Results are rendered per request: they are personal and must never be cached. */
 export default async function ExamResultPage({ params }: PageProps<"/exam-results/[attemptId]">) {
-  if (!examModeEnabled) notFound();
-
   const { attemptId } = await params;
   const user = await getVerifiedUser();
   if (!user) redirect("/exams");

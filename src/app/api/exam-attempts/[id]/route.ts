@@ -1,13 +1,10 @@
-import { examApiHidden, examError } from "@/features/exam/api";
+import { examError } from "@/features/exam/api";
 import { gameJson, requireUser, rpc, unauthenticated } from "@/features/quiz/api-helpers";
 
 const ROUTE = "GET /api/exam-attempts/[id]";
 
 /** The safe manifest: items, options and this owner's saved responses. No keys. */
 export async function GET(_request: Request, ctx: { params: Promise<{ id: string }> }) {
-  const hidden = examApiHidden();
-  if (hidden) return hidden;
-
   const user = await requireUser();
   if (!user) return unauthenticated();
 

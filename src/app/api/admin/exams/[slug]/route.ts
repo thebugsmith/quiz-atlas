@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/features/admin/guard";
-import { examApiHidden } from "@/features/exam/api";
 import { rpc } from "@/features/quiz/api-helpers";
 
 const body = z.discriminatedUnion("action", [
@@ -40,9 +39,6 @@ const body = z.discriminatedUnion("action", [
 ]);
 
 export async function PATCH(request: Request, ctx: { params: Promise<{ slug: string }> }) {
-  const hidden = examApiHidden();
-  if (hidden) return hidden;
-
   const actor = await requireAdmin();
   if (actor instanceof NextResponse) return actor;
 

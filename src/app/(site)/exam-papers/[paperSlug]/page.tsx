@@ -5,7 +5,6 @@ import { Container } from "@/components/ui/container";
 import { ButtonLink } from "@/components/ui/button";
 import { Card, CardBody, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { examModeEnabled } from "@/features/exam/flags";
 import { formatDuration, getPaperDetail } from "@/features/exam/catalog";
 import { FavoriteButton } from "@/features/exam/favorite-button";
 import { StartPractice } from "@/features/exam/start-practice";
@@ -40,7 +39,6 @@ function marks(value: number | string | null) {
 /** A paper's identity and terms before anyone starts: what it is, how it is marked. * Content changes on import, not on deploy, so the catalog is read per request.
  */
 export default async function PaperPage({ params }: PageProps<"/exam-papers/[paperSlug]">) {
-  if (!examModeEnabled) notFound();
   const { paperSlug } = await params;
   const paper = await getPaperDetail(paperSlug);
   if (!paper) notFound();

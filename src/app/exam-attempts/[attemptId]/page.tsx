@@ -1,6 +1,4 @@
-import { notFound } from "next/navigation";
 import { ExamWorkspace } from "@/features/exam/workspace";
-import { examModeEnabled } from "@/features/exam/flags";
 
 export const metadata = {
   title: "Exam paper",
@@ -12,7 +10,6 @@ export const instant = false;
 
 /** The solver lives outside the site shell: no header navigation, no bottom bar. */
 export default async function ExamAttemptPage({ params }: PageProps<"/exam-attempts/[attemptId]">) {
-  if (!examModeEnabled) notFound();
   const { attemptId } = await params;
   return <ExamWorkspace attemptId={attemptId} />;
 }

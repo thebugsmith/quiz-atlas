@@ -1,12 +1,9 @@
 import { cursorPatch } from "@/features/exam/request-schemas";
-import { examApiHidden, examError } from "@/features/exam/api";
+import { examError } from "@/features/exam/api";
 import { gameJson, requireUser, rpc, unauthenticated } from "@/features/quiz/api-helpers";
 
 /** Position and language: preferences, written without touching any response. */
 export async function PATCH(request: Request, ctx: { params: Promise<{ id: string }> }) {
-  const hidden = examApiHidden();
-  if (hidden) return hidden;
-
   const user = await requireUser();
   if (!user) return unauthenticated();
 

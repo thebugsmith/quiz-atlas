@@ -1,14 +1,11 @@
 import { z } from "zod";
-import { examApiHidden, examError } from "@/features/exam/api";
+import { examError } from "@/features/exam/api";
 import { gameJson, requireUser, rpc, unauthenticated } from "@/features/quiz/api-helpers";
 
 const body = z.object({ item_id: z.string().uuid(), on: z.boolean() }).strict();
 
 /** Bookmarks point at the question, not the attempt, so they survive a retake. */
 export async function POST(request: Request, ctx: { params: Promise<{ id: string }> }) {
-  const hidden = examApiHidden();
-  if (hidden) return hidden;
-
   const user = await requireUser();
   if (!user) return unauthenticated();
 

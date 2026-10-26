@@ -3,22 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Compass, Home, LayoutGrid, NotebookTabs } from "lucide-react";
-import { examModeEnabled } from "@/features/exam/flags";
 import { cn } from "@/lib/cn";
 
 const items = [
   { href: "/", label: "Home", Icon: Home },
   { href: "/topics", label: "Topics", Icon: LayoutGrid },
   { href: "/play", label: "Play", Icon: Compass },
+  { href: "/exams", label: "Exams", Icon: NotebookTabs },
 ];
 
 /** Thumb-reachable navigation on phones; hidden during gameplay by the game layout. */
 export function MobileNav() {
   const pathname = usePathname();
-  const links = examModeEnabled
-    ? [...items, { href: "/exams", label: "Exams", Icon: NotebookTabs }]
-    : items;
-
   return (
     <nav
       aria-label="Quick navigation"
@@ -26,7 +22,7 @@ export function MobileNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <ul className="flex items-stretch">
-        {links.map(({ href, label, Icon }) => {
+        {items.map(({ href, label, Icon }) => {
           const active = pathname === href;
           return (
             <li key={href} className="flex-1">

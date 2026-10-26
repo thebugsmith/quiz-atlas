@@ -1,6 +1,5 @@
 import "server-only";
 import { gameJson } from "@/features/quiz/api-helpers";
-import { examModeEnabled } from "./flags";
 
 /**
  * Exam database errors to HTTP. The SQL functions raise short tagged messages, so the
@@ -32,13 +31,4 @@ export function examError(message: string) {
       }
       return null;
   }
-}
-
-/**
- * Exam mode is dark when the build did not enable it. The pages answer 404 through the
- * flag; the API has to answer the same way, otherwise a signed-in client could open,
- * autosave and submit a paper while no exam interface exists at all.
- */
-export function examApiHidden() {
-  return examModeEnabled ? null : gameJson({ error: "not_found" }, 404);
 }

@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Card, CardBody } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { examModeEnabled } from "@/features/exam/flags";
 import { getExamCatalog } from "@/features/exam/catalog";
 import { PaperCard } from "@/features/exam/paper-card";
 
@@ -21,11 +19,10 @@ type Search = { exam?: string; year?: string; q?: string };
 /**
  * The library: every exam the bank knows about, with its papers filtered by exam, year or
  * a text search. Filters live in the URL, so a filtered view is a shareable link and the
- * back button restores it. With the flag off the route is simply not there.
+ * back button restores it.
  * Content changes on import, not on deploy, so the catalog is read per request.
  */
 export default async function ExamsPage({ searchParams }: PageProps<"/exams">) {
-  if (!examModeEnabled) notFound();
   const params = (await searchParams) as Search;
   const exams = await getExamCatalog();
 
