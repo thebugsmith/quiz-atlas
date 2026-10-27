@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ArchiveRestore, Plus, Upload } from "lucide-react";
+import { ExamAdmin } from "@/features/admin/exam-admin";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,7 +45,9 @@ const field =
   "border-border bg-surface focus-visible:outline-primary w-full rounded-[var(--radius-control)] border px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2";
 
 export function AdminShell() {
-  const [tab, setTab] = useState<"questions" | "reports" | "topics" | "import">("questions");
+  const [tab, setTab] = useState<"questions" | "exams" | "reports" | "topics" | "import">(
+    "questions",
+  );
   const [inventory, setInventory] = useState<{
     topics: InventoryTopic[];
     low_inventory: string[];
@@ -110,6 +113,7 @@ export function AdminShell() {
         {(
           [
             { value: "questions", label: "Questions" },
+            { value: "exams", label: "Exams" },
             { value: "reports", label: "Reports" },
             { value: "topics", label: "Topics" },
             { value: "import", label: "Import" },
@@ -139,6 +143,7 @@ export function AdminShell() {
       ) : null}
 
       {tab === "questions" ? <QuestionsTab topics={inventory.topics} /> : null}
+      {tab === "exams" ? <ExamAdmin /> : null}
       {tab === "reports" ? <ReportsTab /> : null}
       {tab === "topics" ? (
         <TopicsTab topics={inventory.topics} onSaved={() => location.reload()} />
