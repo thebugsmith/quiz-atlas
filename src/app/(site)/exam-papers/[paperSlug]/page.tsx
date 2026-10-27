@@ -267,12 +267,13 @@ export default async function PaperPage({ params }: PageProps<"/exam-papers/[pap
               One sitting under the paper&apos;s own duration. The clock is owned by the server and
               runs whether or not this tab is open. Answers are locked when it ends.
             </CardBody>
-            {published && duration ? (
+            {published && duration && paper.rule ? (
               <StartPractice paper={paper.slug} mode="timed" label="Start timed paper" />
             ) : (
               <p className="text-muted-foreground mt-4 flex items-center gap-1.5 text-xs">
                 <Info className="size-3.5" aria-hidden="true" />A timed paper needs a published
-                paper with its own duration.
+                paper, its own duration and a rule version. An imported paper has none until an
+                editor authors one.
               </p>
             )}
           </Card>
