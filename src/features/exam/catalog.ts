@@ -31,6 +31,7 @@ export type ExamPaperSummary = {
   stage: string | null;
   key_status: KeyStatus;
   locales: string[];
+  sections: PaperSection[];
 };
 
 export type ExamSummary = {
@@ -40,9 +41,12 @@ export type ExamSummary = {
   authority: string | null;
   editions: { code: string; label: string; held_from: string | null; held_to: string | null }[];
   papers: ExamPaperSummary[];
+  paper_count: number;
+  years: number[];
+  question_count: number;
 };
 
-export type PaperSection = { subject: string; position: number; items: number };
+export type PaperSection = { id: string; subject: string; position: number; items: number };
 
 export type PaperRule = {
   timing: { kind: "whole_paper" | "sections"; duration_seconds?: number; sections?: unknown[] };

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Container } from "@/components/ui/container";
-import { Card, CardBody } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { getExamCatalog } from "@/features/exam/catalog";
 import { PaperCard } from "@/features/exam/paper-card";
@@ -15,7 +15,10 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-/** One exam: its cycles, then its papers grouped by stage, newest first. * Content changes on import, not on deploy, so the catalog is read per request.
+/**
+ * One exam: every paper it has, newest year first. The year is the only grouping here; the
+ * subjects of a paper are chosen on the paper's own page, and a paper with a single subject
+ * starts from its card.
  */
 export default async function ExamPage({ params }: PageProps<"/exams/[examSlug]">) {
   const { examSlug } = await params;
@@ -23,7 +26,7 @@ export default async function ExamPage({ params }: PageProps<"/exams/[examSlug]"
   const exam = exams.find((entry) => entry.slug === examSlug);
   if (!exam) notFound();
 
-  const stages = [...new Set(exam.papers.map((paper) => paper.stage ?? "Papers"))];
+  const years = [...new Set(exam.papers.map((paper) => paper.year))].sort((a, b) => b - a);
 
   return (
     <Container className="space-y-8">
@@ -38,30 +41,30 @@ export default async function ExamPage({ params }: PageProps<"/exams/[examSlug]"
         <div className="mt-3">
           <SectionHeading
             title={exam.name}
-            description={exam.authority ? `${exam.authority}` : undefined}
+            description={exam.authority ?? "Previous-year papers, newest first."}
           />
         </div>
-        {exam.editions.length > 0 ? (
-          <p className="text-muted-foreground text-sm">
-            Cycles: {exam.editions.map((edition) => edition.label).join(", ")}
-          </p>
-        ) : null}
+        <p className="text-muted-foreground mt-2 text-sm">
+          {exam.paper_count} {exam.paper_count === 1 ? "paper" : "papers"}
+          {exam.years.length > 0 ? ` · ${exam.years.join(", ")}` : ""}
+          {exam.question_count > 0 ? ` · ${exam.question_count} questions` : ""}
+        </p>
       </div>
 
       {exam.papers.length === 0 ? (
         <Card>
           <p className="text-sm font-medium">No papers published for this exam yet</p>
-          <CardBody className="mt-1">
-            A paper is listed once its content, key and marking rules have been reviewed.
-          </CardBody>
+          <p className="text-muted-foreground mt-1 text-sm">
+            A paper is listed once its content and answer key have been reviewed.
+          </p>
         </Card>
       ) : null}
 
-      {stages.map((stage) => {
-        const papers = exam.papers.filter((paper) => (paper.stage ?? "Papers") === stage);
+      {years.map((year) => {
+        const papers = exam.papers.filter((paper) => paper.year === year);
         return (
-          <section key={stage} className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">{stage}</h2>
+          <section key={year} className="space-y-3">
+            <h2 className="text-lg font-semibold tracking-tight">{year}</h2>
             <div className="grid gap-3 md:grid-cols-2">
               {papers.map((paper) => (
                 <PaperCard key={paper.slug} paper={paper} />
