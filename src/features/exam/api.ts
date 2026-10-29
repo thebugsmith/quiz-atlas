@@ -15,6 +15,8 @@ export function examError(message: string) {
       return gameJson({ error: "paper_not_published" }, 409);
     case "paper_has_no_items":
       return gameJson({ error: "paper_not_ready" }, 409);
+    case "invalid_section":
+      return gameJson({ error: "invalid_section" }, 400);
     case "unsupported_mode":
       return gameJson({ error: "unsupported_mode" }, 400);
     case "idempotency_mismatch":

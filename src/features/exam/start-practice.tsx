@@ -13,11 +13,14 @@ import { Button } from "@/components/ui/button";
 export function StartPractice({
   paper,
   mode = "study",
+  sections,
   disabled,
   label = mode === "timed" ? "Start timed paper" : "Start untimed practice",
 }: {
   paper: string;
   mode?: "study" | "timed";
+  /** Section ids to include; omitted means every section of the paper. */
+  sections?: string[];
   disabled?: boolean;
   label?: string;
 }) {
@@ -32,7 +35,12 @@ export function StartPractice({
       const response = await fetch("/api/exam-attempts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paper, mode, create_key: crypto.randomUUID() }),
+        body: JSON.stringify({
+          paper,
+          mode,
+          create_key: crypto.randomUUID(),
+          ...(sections && sections.length > 0 ? { sections } : {}),
+        }),
       });
       if (response.status === 401) {
         setError("Sign in, or start a guest session, to keep your progress.");

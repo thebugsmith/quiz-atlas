@@ -29,6 +29,7 @@ export async function POST(request: Request) {
   }
 
   const timed = parsed.data.mode === "timed";
+  const sections = parsed.data.sections ?? null;
   const { data, error } = timed
     ? await rpc<{ attempt_id: string; created: boolean; state: string }>(
         "exam_create_timed_attempt",
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
           p_paper_slug: parsed.data.paper,
           p_create_key: parsed.data.create_key,
           p_locale: parsed.data.locale ?? "en",
+          p_section_ids: sections,
         },
       )
     : await rpc<{ attempt_id: string; created: boolean; state: string }>("exam_create_or_resume", {
@@ -46,6 +48,7 @@ export async function POST(request: Request) {
         p_create_key: parsed.data.create_key,
         p_locale: parsed.data.locale ?? "en",
         p_allow_draft: process.env.EXAM_ALLOW_DRAFT === "1",
+        p_section_ids: sections,
       });
 
   if (error) {

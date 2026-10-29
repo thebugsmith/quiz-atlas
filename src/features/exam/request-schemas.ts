@@ -26,6 +26,8 @@ export const createAttempt = z
     paper: z.string().min(1).max(120),
     mode: z.enum(["study", "timed"]),
     create_key: z.string().min(8).max(100),
+    /** Paper sections to practise; omitted means the whole paper. */
+    sections: z.array(z.string().uuid()).max(20).optional(),
     locale: z
       .string()
       .regex(/^[a-z]{2}(-[A-Z]{2})?$/)

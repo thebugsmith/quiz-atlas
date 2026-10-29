@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDuration, getPaperDetail } from "@/features/exam/catalog";
 import { FavoriteButton } from "@/features/exam/favorite-button";
 import { StartPractice } from "@/features/exam/start-practice";
+import { SectionStart } from "@/features/exam/section-start";
 import { getVerifiedUser } from "@/lib/supabase/server";
 import { rpc } from "@/features/quiz/api-helpers";
 
@@ -173,7 +174,7 @@ export default async function PaperPage({ params }: PageProps<"/exam-papers/[pap
           ) : (
             <ul className="mt-3 space-y-2 text-sm">
               {paper.sections.map((section) => (
-                <li key={section.subject} className="flex justify-between gap-3">
+                <li key={section.id} className="flex justify-between gap-3">
                   <span>{section.subject}</span>
                   <span className="text-muted-foreground">
                     {section.items} {section.items === 1 ? "question" : "questions"}
@@ -244,6 +245,8 @@ export default async function PaperPage({ params }: PageProps<"/exam-papers/[pap
                     : "Your saved answers open where you left them."}
                 </p>
               </div>
+            ) : paper.sections.length > 1 ? (
+              <SectionStart paper={paper.slug} sections={paper.sections} />
             ) : (
               <StartPractice paper={paper.slug} disabled={!startable} />
             )}
