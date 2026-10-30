@@ -203,7 +203,7 @@ export default async function ExamResultPage({ params }: PageProps<"/exam-result
       <section className="space-y-3">
         <h2 className="text-lg font-semibold tracking-tight">Every question</h2>
         <ul className="space-y-3">
-          {result.items.map((item) => {
+          {result.items.map((item, index) => {
             const status = statusLabel[item.status];
             const manifestItem = byPosition.get(item.position);
             return (
@@ -223,7 +223,7 @@ export default async function ExamResultPage({ params }: PageProps<"/exam-result
                       )}
                       <div>
                         <p className="text-muted-foreground text-xs">
-                          Question {item.position}
+                          Question {index + 1}
                           {item.section ? ` · ${item.section}` : ""}
                         </p>
                         <p className="mt-1 text-sm leading-relaxed">{item.prompt}</p>
