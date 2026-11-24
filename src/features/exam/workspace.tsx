@@ -977,7 +977,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
               })}
             </div>
 
-            <div className="mt-3 max-h-[min(52vh,420px)] overflow-y-auto pr-1">
+            <div className="mt-3 max-h-[min(52vh,420px)] overflow-y-auto p-1.5">
               <div className="grid grid-cols-6 gap-1.5">
                 {(sections.find(([section]) => section === activeTab)?.[1] ?? []).map((index) => {
                   const entry = items[index];
@@ -997,6 +997,9 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
                       ]
                         .filter(Boolean)
                         .join(", ")}
+                      style={
+                        index === current ? { boxShadow: "0 0 0 2px var(--exam-ring)" } : undefined
+                      }
                       className={cn(
                         "relative flex h-9 items-center justify-center rounded-md border text-xs font-medium transition-colors",
                         "focus-visible:outline-2 focus-visible:outline-offset-2",
@@ -1005,7 +1008,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
                           : marked
                             ? "bg-exam-tile border-[var(--exam-marked)] text-[var(--exam-marked)]"
                             : "border-exam-tile-border bg-exam-tile text-muted-foreground hover:bg-exam-tile-hover",
-                        index === current && "shadow-[0_0_0_2px_var(--exam-ring)]",
+                        index === current && "z-10",
                       )}
                     >
                       {index + 1}
