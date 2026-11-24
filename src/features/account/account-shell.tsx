@@ -25,10 +25,14 @@ export function AccountShell() {
   const params = useSearchParams();
   const [identity, setIdentity] = useState<Identity | undefined>(undefined);
   const [busy, setBusy] = useState(false);
+  // After a refused link, the next click signs in to the account Google already has.
+  const [signInOnly, setSignInOnly] = useState(() => params.get("error") === "identity_taken");
   const [message, setMessage] = useState<string | null>(
-    params.get("linked") === "1"
-      ? "Signed in. Your guest quizzes now belong to this account."
-      : null,
+    params.get("merged") === "1"
+      ? "Signed in. The work you did as a guest now belongs to this account."
+      : params.get("linked") === "1"
+        ? "Signed in. Your guest quizzes now belong to this account."
+        : null,
   );
   const [error, setError] = useState<string | null>(() => {
     switch (params.get("error")) {
@@ -36,6 +40,8 @@ export function AccountShell() {
         return "That sign-in link expired. Try again.";
       case "invalid_link":
         return "The sign-in link was malformed. Try again.";
+      case "identity_taken":
+        return "That Google account already has a Quiz Atlas account. Sign in to it instead of adding it to this guest.";
       case "auth_failed": {
         const reason = params.get("reason");
         return reason
@@ -72,21 +78,40 @@ export function AccountShell() {
     setError(null);
     setMessage(null);
     const supabase = getBrowserClient();
-    const next = encodeURIComponent("/account?linked=1");
-    const redirectTo = `${window.location.origin}/auth/callback?next=${next}`;
+    const origin = window.location.origin;
 
-    const { error: authError } = identity?.isAnonymous
-      ? await supabase.auth.linkIdentity({ provider: "google", options: { redirectTo } })
-      : await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
-
-    setBusy(false);
-    if (authError) {
-      setError(
-        authError.message.toLowerCase().includes("manual linking")
-          ? "Linking Google to a guest session is switched off on this project. Enable manual linking in Supabase → Authentication → Settings, or sign out and sign in fresh."
-          : authError.message,
-      );
+    // A guest links Google so its attempts stay attached. If that Google account already
+    // belongs to someone, Supabase refuses the link at its own callback and the browser
+    // comes back with `identity_taken`; the button then signs in instead of linking.
+    if (identity?.isAnonymous && !signInOnly) {
+      const { error: linkError } = await supabase.auth.linkIdentity({
+        provider: "google",
+        options: {
+          redirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/account?linked=1")}`,
+        },
+      });
+      if (!linkError) return;
+      const alreadyLinked =
+        linkError.code === "identity_already_exists" || /already/i.test(linkError.message);
+      if (alreadyLinked) {
+        setSignInOnly(true);
+      } else {
+        setBusy(false);
+        setError(
+          linkError.message.toLowerCase().includes("manual linking")
+            ? "Linking Google to a guest session is switched off on this project. Sign out and sign in with Google instead."
+            : linkError.message,
+        );
+        return;
+      }
     }
+
+    const { error: authError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/account")}` },
+    });
+    setBusy(false);
+    if (authError) setError(authError.message);
   }
 
   async function handleSignOut() {
@@ -154,13 +179,15 @@ export function AccountShell() {
       </p>
 
       <Button onClick={handleGoogle} disabled={busy} className="mt-5 w-full sm:w-auto">
-        {busy ? "Opening Google…" : "Continue with Google"}
+        {busy ? "Opening Google…" : signInOnly ? "Sign in to that account" : "Continue with Google"}
       </Button>
 
       <p className="text-muted-foreground mt-3 text-xs">
-        {identity?.isAnonymous
+        {identity?.isAnonymous && !signInOnly
           ? "Anything you have already played moves onto the account — nothing is copied, lost or double counted."
-          : "No password to remember and no confirmation email to wait for."}
+          : signInOnly
+            ? "Your guest work moves onto that account when you sign in, nothing is lost."
+            : "No password to remember and no confirmation email to wait for."}
       </p>
 
       {message ? (
