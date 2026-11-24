@@ -30,13 +30,22 @@ export function AccountShell() {
       ? "Signed in. Your guest quizzes now belong to this account."
       : null,
   );
-  const [error, setError] = useState<string | null>(
-    params.get("error") === "expired_link"
-      ? "That sign-in link expired. Try again."
-      : params.get("error") === "invalid_link"
-        ? "The sign-in link was malformed. Try again."
-        : null,
-  );
+  const [error, setError] = useState<string | null>(() => {
+    switch (params.get("error")) {
+      case "expired_link":
+        return "That sign-in link expired. Try again.";
+      case "invalid_link":
+        return "The sign-in link was malformed. Try again.";
+      case "auth_failed": {
+        const reason = params.get("reason");
+        return reason
+          ? `Google did not complete the sign-in (${reason}). Try again.`
+          : "Google did not complete the sign-in. Try again.";
+      }
+      default:
+        return null;
+    }
+  });
 
   const readIdentity = useCallback(async (): Promise<Identity> => {
     const { data, error: readError } = await getBrowserClient().auth.getUser();
