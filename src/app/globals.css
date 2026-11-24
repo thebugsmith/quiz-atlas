@@ -35,6 +35,17 @@
   --focus-ring: #2563eb;
   --radius-card: 16px;
   --radius-control: 12px;
+
+  /* Exam solver: three surface tiers, and the palette's state colours. */
+  --exam-canvas: #eef2f7;
+  --exam-panel: #ffffff;
+  --exam-tile: #f8fafc;
+  --exam-tile-hover: #eef2f7;
+  --exam-tile-border: rgba(15, 23, 42, 0.1);
+  --exam-ring: #0f172a;
+  --exam-answered: #047857;
+  --exam-answered-soft: rgba(4, 120, 87, 0.12);
+  --exam-marked: #b45309;
 }
 
 [data-theme="dark"] {
@@ -62,6 +73,17 @@
   --warning-soft: #2b1f08;
 
   --focus-ring: #60a5fa;
+
+  /* Exam solver: deep canvas, panel chrome, raised option tiles. */
+  --exam-canvas: #0b0f19;
+  --exam-panel: #111827;
+  --exam-tile: #1a2234;
+  --exam-tile-hover: #202b42;
+  --exam-tile-border: rgba(255, 255, 255, 0.08);
+  --exam-ring: #ffffff;
+  --exam-answered: #10b981;
+  --exam-answered-soft: rgba(16, 185, 129, 0.16);
+  --exam-marked: #f59e0b;
 }
 
 @theme inline {
@@ -83,6 +105,13 @@
   --color-danger-soft: var(--danger-soft);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
+
+  --color-exam-canvas: var(--exam-canvas);
+  --color-exam-panel: var(--exam-panel);
+  --color-exam-tile: var(--exam-tile);
+  --color-exam-tile-hover: var(--exam-tile-hover);
+  --color-exam-tile-border: var(--exam-tile-border);
+  --color-exam-answered: var(--exam-answered);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

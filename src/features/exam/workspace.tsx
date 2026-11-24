@@ -38,6 +38,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
   const [conflict, setConflict] = useState<Conflict | null>(null);
   const [numericDraft, setNumericDraft] = useState<Record<string, string>>({});
   const [numbersVisible, setNumbersVisible] = useState(true);
+  const [pinnedTab, setPinnedTab] = useState<string | null>(null);
   const [owner, setOwner] = useState<string | null>(null);
   const [pending, setPending] = useState(0);
   const [confirming, setConfirming] = useState(false);
@@ -281,6 +282,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
       const target = items[index];
       if (!target) return;
       setCurrent(index);
+      setPinnedTab(null);
       setFeedback(null);
       setNoteState("idle");
       setNote("");
@@ -436,16 +438,17 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
 
   const answeredCount = manifest.items.filter(isAnswered).length;
   const markedCount = manifest.items.filter((entry) => entry.response?.marked).length;
+  const activeTab = pinnedTab ?? item.section ?? sections[0]?.[0] ?? "";
 
   return (
-    <div className="min-h-dvh">
+    <div className="bg-exam-canvas min-h-dvh">
       <a
         href="#question"
         className="focus:bg-surface sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow"
       >
         Skip to the question
       </a>
-      <header className="border-border bg-background/95 sticky top-0 z-20 border-b backdrop-blur">
+      <header className="border-exam-tile-border bg-exam-panel sticky top-0 z-20 border-b">
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2.5">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold tracking-tight">
@@ -594,7 +597,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
             </button>
           </div>
 
-          <article className="border-border bg-surface mt-3 rounded-[var(--radius-card)] border p-5 sm:p-6">
+          <article className="mt-4">
             {item.stimulus ? (
               <div className="mb-4 grid gap-4 lg:grid-cols-2">
                 <div className="border-border bg-background/60 max-h-[28rem] overflow-auto rounded-[var(--radius-control)] border p-4 text-sm leading-relaxed whitespace-pre-line">
@@ -650,7 +653,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
                       <label
                         key={option.id}
                         className={cn(
-                          "border-border hover:bg-surface-muted flex cursor-pointer items-start gap-3 rounded-[var(--radius-control)] border px-3 py-2.5 text-sm",
+                          "border-exam-tile-border bg-exam-tile hover:bg-exam-tile-hover flex cursor-pointer items-start gap-3 rounded-[var(--radius-control)] border px-3 py-3 text-sm transition-colors",
                           selected && "border-primary bg-primary-soft",
                         )}
                       >
@@ -688,7 +691,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
                       <label
                         key={option.id}
                         className={cn(
-                          "border-border hover:bg-surface-muted flex cursor-pointer items-start gap-3 rounded-[var(--radius-control)] border px-3 py-2.5 text-sm",
+                          "border-exam-tile-border bg-exam-tile hover:bg-exam-tile-hover flex cursor-pointer items-start gap-3 rounded-[var(--radius-control)] border px-3 py-3 text-sm transition-colors",
                           selected && "border-primary bg-primary-soft",
                         )}
                       >
@@ -823,27 +826,6 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
                   >
                     Check answer
                   </Button>
-                  <Button
-                    variant="quiet"
-                    size="sm"
-                    onClick={async () => {
-                      const response = await fetch(`/api/exam-attempts/${attemptId}/reveal`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ item_id: item.item_id }),
-                      });
-                      if (!response.ok) return;
-                      const data = (await response.json()) as { explanation: string | null };
-                      setFeedback({
-                        itemId: item.item_id,
-                        status: "revealed",
-                        award: "",
-                        explanation: data.explanation,
-                      });
-                    }}
-                  >
-                    Show explanation
-                  </Button>
                 </>
               ) : null}
               <Button
@@ -882,9 +864,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
                     ? "border-success/40 bg-success-soft"
                     : feedback.status === "partial"
                       ? "border-primary/40 bg-primary-soft"
-                      : feedback.status === "revealed"
-                        ? "border-border bg-surface-muted"
-                        : "border-warning/40 bg-warning-soft",
+                      : "border-warning/40 bg-warning-soft",
                 )}
                 role="status"
               >
@@ -899,14 +879,7 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
                 </p>
                 {feedback.explanation ? (
                   <p className="text-muted-foreground mt-1">{feedback.explanation}</p>
-                ) : (
-                  <p className="text-muted-foreground mt-1">
-                    No explanation was printed with this item.
-                  </p>
-                )}
-                <p className="text-muted-foreground mt-2 text-xs">
-                  Checking records your first unaided answer and is shown as assisted practice.
-                </p>
+                ) : null}
               </div>
             ) : null}
 
@@ -944,17 +917,13 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
                 </div>
               </div>
             </details>
-
-            <p className="text-muted-foreground border-border mt-4 border-t pt-3 text-xs">
-              Marks and explanations stay hidden until submission in a timed paper.
-            </p>
           </article>
         </main>
 
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <button
             type="button"
-            className="border-border bg-surface flex w-full items-center justify-between rounded-[var(--radius-control)] border px-3 py-2 text-sm font-medium lg:hidden"
+            className="border-exam-tile-border bg-exam-panel flex w-full items-center justify-between rounded-[var(--radius-control)] border px-3 py-2 text-sm font-medium lg:hidden"
             onClick={() => setNumbersVisible((visible) => !visible)}
             aria-expanded={numbersVisible}
           >
@@ -965,67 +934,122 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
           </button>
 
           <div
-            className={cn("mt-3 lg:mt-0", !numbersVisible && "hidden lg:block")}
+            className={cn(
+              "border-exam-tile-border bg-exam-panel mt-3 rounded-[var(--radius-card)] border p-3 lg:mt-0",
+              !numbersVisible && "hidden lg:block",
+            )}
             role="region"
             aria-label="Question palette"
           >
-            {sections.map(([section, indexes]) => (
-              <div key={section} className="mb-4">
-                <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-                  {section}
-                </p>
-                <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8 lg:grid-cols-6">
-                  {indexes.map((index) => {
-                    const entry = items[index];
-                    const answered = isAnswered(entry);
-                    const marked = entry.response?.marked ?? false;
-                    return (
-                      <button
-                        key={entry.item_id}
-                        type="button"
-                        onClick={() => goTo(index)}
-                        aria-current={index === current ? "true" : undefined}
-                        aria-label={[
-                          `Question ${index + 1}`,
-                          answered ? "answered" : "not answered",
-                          marked ? "marked for review" : null,
-                          index === current ? "current" : null,
-                        ]
-                          .filter(Boolean)
-                          .join(", ")}
-                        className={cn(
-                          "relative flex h-10 items-center justify-center rounded-md border text-xs font-medium",
-                          "focus-visible:outline-2 focus-visible:outline-offset-2",
-                          answered
-                            ? "bg-primary text-primary-foreground border-transparent"
-                            : "border-border bg-surface text-muted-foreground",
-                          index === current && "ring-primary ring-2 ring-offset-1",
-                        )}
-                      >
-                        {index + 1}
-                        {marked ? (
-                          <span className="bg-warning absolute -top-1 -right-1 size-2 rounded-full" />
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+                Question palette
+              </h2>
+              <span className="text-muted-foreground text-xs">
+                {answeredCount}/{items.length}
+              </span>
+            </div>
 
-            <ul id="palette-help" className="text-muted-foreground mt-2 space-y-1 text-xs">
-              <li className="flex items-center gap-2">
-                <span className="bg-primary inline-block size-3 rounded-sm" /> Answered
+            <div role="tablist" aria-label="Subjects" className="mt-2 flex flex-wrap gap-1">
+              {sections.map(([section, indexes]) => {
+                const answeredIn = indexes.filter((index) => isAnswered(items[index])).length;
+                const active = section === activeTab;
+                return (
+                  <button
+                    key={section}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setPinnedTab(section)}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors",
+                      active
+                        ? "border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--foreground)]"
+                        : "border-exam-tile-border text-muted-foreground hover:bg-exam-tile-hover",
+                    )}
+                  >
+                    {section}
+                    <span className="opacity-70">
+                      {answeredIn}/{indexes.length}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 max-h-[min(52vh,420px)] overflow-y-auto pr-1">
+              <div className="grid grid-cols-6 gap-1.5">
+                {(sections.find(([section]) => section === activeTab)?.[1] ?? []).map((index) => {
+                  const entry = items[index];
+                  const answered = isAnswered(entry);
+                  const marked = entry.response?.marked ?? false;
+                  return (
+                    <button
+                      key={entry.item_id}
+                      type="button"
+                      onClick={() => goTo(index)}
+                      aria-current={index === current ? "true" : undefined}
+                      aria-label={[
+                        `Question ${index + 1}`,
+                        answered ? "answered" : "not answered",
+                        marked ? "marked for review" : null,
+                        index === current ? "current" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                      className={cn(
+                        "relative flex h-9 items-center justify-center rounded-md border text-xs font-medium transition-colors",
+                        "focus-visible:outline-2 focus-visible:outline-offset-2",
+                        answered
+                          ? "border-[var(--exam-answered)] bg-[var(--exam-answered-soft)] text-[var(--exam-answered)]"
+                          : marked
+                            ? "bg-exam-tile border-[var(--exam-marked)] text-[var(--exam-marked)]"
+                            : "border-exam-tile-border bg-exam-tile text-muted-foreground hover:bg-exam-tile-hover",
+                        index === current && "shadow-[0_0_0_2px_var(--exam-ring)]",
+                      )}
+                    >
+                      {index + 1}
+                      {marked ? (
+                        <span className="absolute -top-1 -right-1 size-2 rounded-full bg-[var(--exam-marked)]" />
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <dl className="border-exam-tile-border mt-3 grid grid-cols-3 gap-2 border-t pt-2 text-xs">
+              <div>
+                <dt className="text-muted-foreground">Answered</dt>
+                <dd className="font-semibold text-[var(--exam-answered)]">{answeredCount}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Marked</dt>
+                <dd className="font-semibold text-[var(--exam-marked)]">{markedCount}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Left</dt>
+                <dd className="font-semibold">{items.length - answeredCount}</dd>
+              </div>
+            </dl>
+
+            <ul className="text-muted-foreground mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
+              <li className="flex items-center gap-1.5">
+                <span className="inline-block size-2.5 rounded-sm bg-[var(--exam-answered)]" />
+                Answered
               </li>
-              <li className="flex items-center gap-2">
-                <span className="border-border inline-block size-3 rounded-sm border" /> Not
-                answered
+              <li className="flex items-center gap-1.5">
+                <span className="border-exam-tile-border bg-exam-tile inline-block size-2.5 rounded-sm border" />
+                Not answered
               </li>
-              <li className="flex items-center gap-2">
-                <span className="bg-warning inline-block size-2 rounded-full" /> Marked for review
+              <li className="flex items-center gap-1.5">
+                <span className="inline-block size-2 rounded-full bg-[var(--exam-marked)]" />
+                Marked
               </li>
-              <li>Arrow keys move between questions, A to D chooses an option, M marks.</li>
             </ul>
+            <p className="text-muted-foreground mt-1 text-[11px]">
+              Arrows move between questions, A to D chooses an option, M marks.
+            </p>
           </div>
         </aside>
       </div>
