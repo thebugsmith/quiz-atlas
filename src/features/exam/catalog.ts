@@ -88,6 +88,7 @@ export type PaperDetail = {
   sections: PaperSection[];
   items: number;
   locales: { locale: string; status: string }[];
+  locales_available: string[];
   rule: PaperRule | null;
 };
 

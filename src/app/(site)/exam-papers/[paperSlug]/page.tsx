@@ -6,6 +6,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { Card, CardBody, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDuration, getPaperDetail } from "@/features/exam/catalog";
+import { localeLabel } from "@/features/exam/locales";
 import { FavoriteButton } from "@/features/exam/favorite-button";
 import { StartPractice } from "@/features/exam/start-practice";
 import { SectionStart } from "@/features/exam/section-start";
@@ -159,8 +160,8 @@ export default async function PaperPage({ params }: PageProps<"/exam-papers/[pap
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Languages</dt>
               <dd>
-                {paper.locales.length > 0
-                  ? paper.locales.map((locale) => locale.locale.toUpperCase()).join(", ")
+                {paper.locales_available.length > 0
+                  ? paper.locales_available.map(localeLabel).join(", ")
                   : "English"}
               </dd>
             </div>
@@ -246,9 +247,17 @@ export default async function PaperPage({ params }: PageProps<"/exam-papers/[pap
                 </p>
               </div>
             ) : paper.sections.length > 1 ? (
-              <SectionStart paper={paper.slug} sections={paper.sections} />
+              <SectionStart
+                paper={paper.slug}
+                sections={paper.sections}
+                locales={paper.locales_available}
+              />
             ) : (
-              <StartPractice paper={paper.slug} disabled={!startable} />
+              <StartPractice
+                paper={paper.slug}
+                locales={paper.locales_available}
+                disabled={!startable}
+              />
             )}
             {!startable ? (
               <p className="text-muted-foreground mt-3 flex items-center gap-1.5 text-xs">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LanguageChoice } from "./start-practice";
 
 type Section = { id: string; subject: string; items: number };
 
@@ -12,11 +13,20 @@ type Section = { id: string; subject: string; items: number };
  * is still "the whole paper"; unticking a subject narrows the attempt to the rest. The scope
  * is sent once, at creation, and the attempt keeps only those items.
  */
-export function SectionStart({ paper, sections }: { paper: string; sections: Section[] }) {
+export function SectionStart({
+  paper,
+  sections,
+  locales,
+}: {
+  paper: string;
+  sections: Section[];
+  locales?: string[];
+}) {
   const router = useRouter();
   const [chosen, setChosen] = useState<string[]>(() => sections.map((section) => section.id));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [locale, setLocale] = useState(locales?.[0] ?? "en");
 
   const all = sections.reduce((total, section) => total + section.items, 0);
   const picked = sections
@@ -41,6 +51,7 @@ export function SectionStart({ paper, sections }: { paper: string; sections: Sec
           paper,
           mode: "study",
           create_key: crypto.randomUUID(),
+          locale,
           sections: chosen,
         }),
       });
@@ -68,6 +79,9 @@ export function SectionStart({ paper, sections }: { paper: string; sections: Sec
 
   return (
     <div className="mt-4 space-y-3">
+      {locales && locales.length > 1 ? (
+        <LanguageChoice locales={locales} value={locale} onChange={setLocale} name={paper} />
+      ) : null}
       <fieldset>
         <legend className="text-muted-foreground mb-2 text-xs font-medium">
           Subjects to include
