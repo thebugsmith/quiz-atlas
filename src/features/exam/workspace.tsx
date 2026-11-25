@@ -612,33 +612,11 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
                   ) : null}
                 </div>
                 <div>
-                  {item.stem ? (
-                    <p className="text-muted-foreground mb-3 text-sm">{item.stem}</p>
-                  ) : null}
-                  <h1 className="text-[17px] leading-relaxed font-medium">{item.prompt}</h1>
-                  {item.statements.length > 0 ? (
-                    <ol className="text-muted-foreground mt-3 list-decimal space-y-1 pl-5 text-sm">
-                      {item.statements.map((statement) => (
-                        <li key={statement}>{statement}</li>
-                      ))}
-                    </ol>
-                  ) : null}
+                  <QuestionText item={item} />
                 </div>
               </div>
             ) : (
-              <>
-                {item.stem ? (
-                  <p className="text-muted-foreground mb-3 text-sm">{item.stem}</p>
-                ) : null}
-                <h1 className="text-[17px] leading-relaxed font-medium">{item.prompt}</h1>
-                {item.statements.length > 0 ? (
-                  <ol className="text-muted-foreground mt-3 list-decimal space-y-1 pl-5 text-sm">
-                    {item.statements.map((statement) => (
-                      <li key={statement}>{statement}</li>
-                    ))}
-                  </ol>
-                ) : null}
-              </>
+              <QuestionText item={item} />
             )}
 
             <div className="mt-5">
@@ -1057,5 +1035,29 @@ export function ExamWorkspace({ attemptId }: { attemptId: string }) {
         </aside>
       </div>
     </div>
+  );
+}
+
+/**
+ * The question as a player reads it: lead-in, the numbered statements it refers to, then the
+ * ask. The ask says "the statements given above", so rendering it before the list (as the
+ * first version did) made comprehension items read backwards.
+ */
+function QuestionText({ item }: { item: ManifestItem }) {
+  return (
+    <>
+      {item.stem ? <p className="text-muted-foreground mb-3 text-sm">{item.stem}</p> : null}
+      {item.statements.length > 0 ? (
+        <ol className="border-exam-tile-border bg-exam-tile mb-4 space-y-1.5 rounded-[var(--radius-control)] border p-4 text-[15px] leading-relaxed">
+          {item.statements.map((statement, index) => (
+            <li key={statement} className="flex gap-2">
+              <span className="text-muted-foreground shrink-0 font-medium">{index + 1}.</span>
+              <span>{statement}</span>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+      <h1 className="text-[17px] leading-relaxed font-medium">{item.prompt}</h1>
+    </>
   );
 }
