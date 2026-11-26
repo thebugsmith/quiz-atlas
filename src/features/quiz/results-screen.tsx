@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
+import { MatchLists, type MatchBlock } from "@/components/ui/match-lists";
 
 type ReviewOption = { id: number; text: string };
 
@@ -16,6 +17,7 @@ type ReviewQuestion = {
   prompt: string;
   stem: string | null;
   statements: string[];
+  match?: MatchBlock | null;
   options: ReviewOption[];
   selected_option_id: number | null;
   correct_option_id: number;
@@ -330,6 +332,8 @@ export function ResultsScreen({ attemptId }: { attemptId: string }) {
                           ))}
                         </ol>
                       ) : null}
+
+                      {question.match ? <MatchLists match={question.match} /> : null}
 
                       <ul className="space-y-1.5">
                         {question.options.map((option, index) => {

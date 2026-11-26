@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Flag, Loader2, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
+import { MatchLists } from "@/components/ui/match-lists";
 import { isAnswered, type Manifest, type ManifestItem, type ResponseValue } from "./manifest";
 import { clearOtherOwners, dropEdit, pendingFor, queueEdit } from "./outbox";
 
@@ -1057,6 +1058,7 @@ function QuestionText({ item }: { item: ManifestItem }) {
           ))}
         </ol>
       ) : null}
+      {item.match ? <MatchLists match={item.match} /> : null}
       <h1 className="text-[17px] leading-relaxed font-medium">{item.prompt}</h1>
     </>
   );

@@ -13,6 +13,24 @@ import { z } from "zod";
  * to play or to review later.
  */
 
+/** Two columns for a match-the-following question; the answer is still one option. */
+export const matchSchema = z
+  .object({
+    list1: z.array(z.string().trim().min(1).max(200)).min(2).max(8),
+    list2: z.array(z.string().trim().min(1).max(200)).min(2).max(8),
+    labels1: z.enum(["1", "a", "i"]).optional(),
+    labels2: z.enum(["1", "a", "i"]).optional(),
+  })
+  .superRefine((match, ctx) => {
+    if (match.list1.length !== match.list2.length) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["list2"],
+        message: "both match columns need the same number of rows",
+      });
+    }
+  });
+
 export const optionSchema = z.object({
   id: z.number().int().min(1).max(4),
   text: z.string().trim().min(1).max(500),
@@ -36,6 +54,7 @@ export const importQuestionSchema = z
     options: z.array(optionSchema).length(4, "exactly four options are required"),
     correct_option_id: z.number().int(),
     explanation: z.string().trim().min(5).max(2000).optional(),
+    match: matchSchema.optional(),
     tags: z.array(z.string().trim().min(1).max(40)).max(12).default([]),
     added_at: z
       .string()
@@ -72,6 +91,22 @@ export const importQuestionSchema = z
         code: "custom",
         path: ["statements"],
         message: "a comprehension question needs a stem or at least one statement",
+      });
+    }
+
+    if (question.match && question.type !== "mcq") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["match"],
+        message: "a match question is type mcq, not comprehension",
+      });
+    }
+
+    if (question.match && question.statements.length > 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["match"],
+        message: "a match question carries no statements; the columns live in match",
       });
     }
 

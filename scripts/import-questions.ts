@@ -179,6 +179,7 @@ async function applyQuestion(row: number, question: ImportQuestion): Promise<Res
         question.correct_option_id,
         question.explanation ?? null,
         hash,
+        question.match ? JSON.stringify(question.match) : null,
       ],
     );
 

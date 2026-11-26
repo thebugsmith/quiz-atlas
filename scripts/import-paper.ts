@@ -14,12 +14,21 @@ import { Pool, type PoolClient } from "pg";
 
 process.loadEnvFile(resolve(process.cwd(), ".env.local"));
 
+/** Two columns for a match-the-following question. The answer stays a single-choice code. */
+type MatchPayload = {
+  list1: string[];
+  list2: string[];
+  labels1?: "1" | "a" | "i";
+  labels2?: "1" | "a" | "i";
+};
+
 type LocaleText = {
   prompt: string;
   stem?: string | null;
   statements?: string[];
   options: { id: number; text: string }[];
   explanation?: string | null;
+  match?: MatchPayload;
 };
 
 type Question = {
@@ -85,6 +94,23 @@ function problems(question: Question): string[] {
       if (!option.text || option.text.trim().length === 0) found.push(`${locale}: empty option`);
       if (option.text.length > 500) found.push(`${locale}: option over 500 chars`);
       ids.add(option.id);
+    }
+    if (text.match) {
+      const { list1, list2, labels1, labels2 } = text.match;
+      if (!Array.isArray(list1) || !Array.isArray(list2) || list1.length < 2 || list1.length > 8)
+        found.push(`${locale}: match needs two columns of 2 to 8 rows`);
+      if ((list1?.length ?? 0) !== (list2?.length ?? 0))
+        found.push(`${locale}: match columns differ in length`);
+      for (const entry of [...(list1 ?? []), ...(list2 ?? [])]) {
+        if (!entry || !entry.trim()) found.push(`${locale}: empty match entry`);
+        else if (entry.length > 200) found.push(`${locale}: match entry over 200 chars`);
+      }
+      if (labels1 && !["1", "a", "i"].includes(labels1))
+        found.push(`${locale}: match labels1 must be 1, a or i`);
+      if (labels2 && !["1", "a", "i"].includes(labels2))
+        found.push(`${locale}: match labels2 must be 1, a or i`);
+      if (question.type === "comprehension")
+        found.push(`${locale}: a match question is type mcq, not comprehension`);
     }
   }
   if (!ids.has(question.correctOptionId)) found.push("correct_option_id not in options");
@@ -249,8 +275,9 @@ async function main() {
         const { rows: versionRows } = await client.query<{ id: string }>(
           `insert into content.question_versions
              (question_id, version_number, topic_id, subtopic_id, tags, locale, difficulty,
-              question_type, stem, statements, prompt, options, correct_option_id, explanation, content_hash)
-           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13, $14, $15)
+              question_type, stem, statements, prompt, options, correct_option_id, explanation, content_hash,
+              match)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13, $14, $15, $16::jsonb)
            returning id`,
           [
             questionId,
@@ -268,6 +295,7 @@ async function main() {
             question.correctOptionId,
             text.explanation ?? null,
             hash,
+            text.match ? JSON.stringify(text.match) : null,
           ],
         );
         const versionId = versionRows[0].id;

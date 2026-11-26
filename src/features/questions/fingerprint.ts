@@ -19,6 +19,14 @@ export function questionFingerprint(question: ImportQuestion): string {
     ),
     prompt: question.prompt.trim().toLowerCase().replace(/\s+/g, " "),
     options,
+    match: question.match
+      ? {
+          list1: question.match.list1.map((entry) => entry.trim().toLowerCase()),
+          list2: question.match.list2.map((entry) => entry.trim().toLowerCase()),
+          labels1: question.match.labels1 ?? "1",
+          labels2: question.match.labels2 ?? "a",
+        }
+      : null,
     correct: question.options
       .find((option) => option.id === question.correct_option_id)
       ?.text.trim()

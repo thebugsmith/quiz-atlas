@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
+import { MatchLists, type MatchBlock } from "@/components/ui/match-lists";
 
 type Option = { id: number; text: string };
 
@@ -27,6 +28,7 @@ type Question = {
   type: "mcq" | "comprehension";
   stem: string | null;
   statements: string[];
+  match?: MatchBlock | null;
   prompt: string;
   options: Option[];
   finished?: boolean;
@@ -648,6 +650,8 @@ export function GameScreen({ attemptId }: { attemptId: string }) {
             ))}
           </ol>
         ) : null}
+
+        {question.match ? <MatchLists match={question.match} /> : null}
 
         <h1
           ref={promptRef}

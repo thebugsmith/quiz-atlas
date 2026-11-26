@@ -1,3 +1,4 @@
+import type { MatchBlock } from "@/components/ui/match-lists";
 /** The safe manifest the solver receives. No keys, no correctness, only this attempt. */
 
 export type ManifestOption = { id: string; label: string; text: string };
@@ -44,6 +45,7 @@ export type ManifestItem = {
   prompt: string;
   stem: string | null;
   statements: string[];
+  match?: MatchBlock | null;
   options: ManifestOption[];
   input: { kind: "integer" | "decimal"; max_decimal_places?: number } | null;
   stimulus: ManifestStimulus | null;

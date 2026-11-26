@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { MatchLists } from "@/components/ui/match-lists";
+import type { MatchBlock } from "@/components/ui/match-lists";
 import { ArrowLeft, CheckCircle2, MinusCircle, XCircle } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Card, CardBody, CardTitle } from "@/components/ui/card";
@@ -20,6 +22,7 @@ type ResultItem = {
   section: string | null;
   type: string;
   prompt: string;
+  match?: MatchBlock | null;
   response: {
     kind: string;
     option_id?: string | null;
@@ -226,6 +229,7 @@ export default async function ExamResultPage({ params }: PageProps<"/exam-result
                           Question {index + 1}
                           {item.section ? ` · ${item.section}` : ""}
                         </p>
+                        {item.match ? <MatchLists match={item.match} /> : null}
                         <p className="mt-1 text-sm leading-relaxed">{item.prompt}</p>
                       </div>
                     </div>
