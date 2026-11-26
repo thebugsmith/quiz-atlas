@@ -40,11 +40,6 @@ export async function GET(request: Request) {
     if (!providerError && (await getVerifiedUser())) {
       return NextResponse.redirect(new URL("/account", url.origin));
     }
-    if (providerError === "identity_already_exists") {
-      // Linking a guest is refused when that Google account already has its own account.
-      // The fix is to sign in to it instead, which the account page offers.
-      return NextResponse.redirect(new URL("/account?error=identity_taken", url.origin));
-    }
     if (providerError) {
       return NextResponse.redirect(
         new URL(

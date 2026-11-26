@@ -17,22 +17,22 @@ type Identity = {
 
 /**
  * Google is the only way to become permanent; guests keep playing without an account.
- * A guest signs in by *linking* the provider to the anonymous user it already has, so
- * attempts and bookmarks stay attached instead of being copied across.
+ *
+ * A guest signs in with the same provider call everybody else uses. The callback moves the
+ * guest's attempts and bookmarks onto whichever account Google returns, so one click both
+ * creates an account and opens an existing one — linking the provider to the guest is not
+ * offered, because Supabase refuses that for a Google account that already has a user and
+ * the refusal used to come back as "sign in instead", a second click for no reason.
  */
 export function AccountShell() {
   const router = useRouter();
   const params = useSearchParams();
   const [identity, setIdentity] = useState<Identity | undefined>(undefined);
   const [busy, setBusy] = useState(false);
-  // After a refused link, the next click signs in to the account Google already has.
-  const [signInOnly, setSignInOnly] = useState(() => params.get("error") === "identity_taken");
   const [message, setMessage] = useState<string | null>(
     params.get("merged") === "1"
       ? "Signed in. The work you did as a guest now belongs to this account."
-      : params.get("linked") === "1"
-        ? "Signed in. Your guest quizzes now belong to this account."
-        : null,
+      : null,
   );
   const [error, setError] = useState<string | null>(() => {
     switch (params.get("error")) {
@@ -40,8 +40,6 @@ export function AccountShell() {
         return "That sign-in link expired. Try again.";
       case "invalid_link":
         return "The sign-in link was malformed. Try again.";
-      case "identity_taken":
-        return "That Google account already has a Quiz Atlas account. Sign in to it instead of adding it to this guest.";
       case "auth_failed": {
         const reason = params.get("reason");
         return reason
@@ -80,32 +78,8 @@ export function AccountShell() {
     const supabase = getBrowserClient();
     const origin = window.location.origin;
 
-    // A guest links Google so its attempts stay attached. If that Google account already
-    // belongs to someone, Supabase refuses the link at its own callback and the browser
-    // comes back with `identity_taken`; the button then signs in instead of linking.
-    if (identity?.isAnonymous && !signInOnly) {
-      const { error: linkError } = await supabase.auth.linkIdentity({
-        provider: "google",
-        options: {
-          redirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/account?linked=1")}`,
-        },
-      });
-      if (!linkError) return;
-      const alreadyLinked =
-        linkError.code === "identity_already_exists" || /already/i.test(linkError.message);
-      if (alreadyLinked) {
-        setSignInOnly(true);
-      } else {
-        setBusy(false);
-        setError(
-          linkError.message.toLowerCase().includes("manual linking")
-            ? "Linking Google to a guest session is switched off on this project. Sign out and sign in with Google instead."
-            : linkError.message,
-        );
-        return;
-      }
-    }
-
+    // One button for both outcomes: Google creates the account or opens the one it already
+    // has, and /auth/callback moves a guest's work onto whatever comes back.
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/account")}` },
@@ -179,15 +153,13 @@ export function AccountShell() {
       </p>
 
       <Button onClick={handleGoogle} disabled={busy} className="mt-5 w-full sm:w-auto">
-        {busy ? "Opening Google…" : signInOnly ? "Sign in to that account" : "Continue with Google"}
+        {busy ? "Opening Google…" : "Continue with Google"}
       </Button>
 
       <p className="text-muted-foreground mt-3 text-xs">
-        {identity?.isAnonymous && !signInOnly
-          ? "Anything you have already played moves onto the account — nothing is copied, lost or double counted."
-          : signInOnly
-            ? "Your guest work moves onto that account when you sign in, nothing is lost."
-            : "No password to remember and no confirmation email to wait for."}
+        {identity?.isAnonymous
+          ? "Signs you in if you already have an account, or makes one. Anything you have played as a guest moves onto it."
+          : "No password to remember and no confirmation email to wait for."}
       </p>
 
       {message ? (
