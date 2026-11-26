@@ -1,12 +1,18 @@
-# Netlify serves the public hostname and proxies every request to the OCI app, which
-# owns the API routes, cookies and database access. Swapping to an own domain later only
-# changes this file and DNS — the server keeps running where it is.
+# Netlify runs the Next.js app itself. Its OpenNext adapter is picked up from `next build`
+# automatically, so nothing here mentions it; `publish` must point at the build output, not
+# at `public/`, or the site would serve the static folder and 404 every route.
+#
+# The OCI host keeps running the same commit as a staging origin; it is not behind this site.
 [build]
-  publish = "public"
-  command = "echo 'Fronted by Netlify; the app runs on the OCI host'"
+  command = "pnpm build"
+  publish = ".next"
 
-[[redirects]]
-  from = "/*"
-  to = "http://161.118.171.47:3000/:splat"
-  status = 200
-  force = true
+[build.environment]
+  NODE_VERSION = "22"
+
+# The app sets no framing or sniffing headers of its own.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

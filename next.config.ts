@@ -1,9 +1,14 @@
 import type { NextConfig } from "next";
 
+// Netlify builds the app itself through its OpenNext adapter, which reads the normal
+// `next build` output; `standalone` only exists for the OCI host that runs the app under
+// systemd. Netlify exports NETLIFY=true for every build.
+const onNetlify = process.env.NETLIFY === "true";
+
 const nextConfig: NextConfig = {
   /* config options here */
   // A self-contained server bundle, so the OCI container only needs node.
-  output: "standalone",
+  ...(onNetlify ? {} : { output: "standalone" as const }),
   cacheComponents: true,
   partialPrefetching: true,
   // The dev server is opened from more than one host name (localhost, 127.0.0.1,
